@@ -20,8 +20,8 @@ def target_grid_size(image_width: int, image_height: int, out_width: int | None 
     if out_width is not None:
         row_count = max(1, round(out_width * image_height / (image_width * char_aspect)))
         return (out_width, row_count)
-    elif out_height is not None:
-        col_count = max(1, round(out_height * image_width * char_aspect / image_height))
-        return (col_count, out_height)
     
-    return (80, 40)
+    # Out height is guaranteed not to be None here
+    assert out_height is not None
+    col_count = max(1, round(out_height * image_width * char_aspect / image_height))
+    return (col_count, out_height)

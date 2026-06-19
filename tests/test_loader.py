@@ -42,3 +42,13 @@ def test_unsupported_source_type():
 def test_corrupt_bytes():
     with pytest.raises(UnsupportedImageError):
         load_image(b"invalid image bytes header")
+
+def test_file_like_object():
+    img = Image.new("RGBA", (5, 5), color=(0, 255, 0, 128))
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    buf.seek(0)
+    arr = load_image(buf)
+    assert arr.shape == (5, 5, 4)
+    assert np.all(arr[:, :, 1] == 255)
+

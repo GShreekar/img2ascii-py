@@ -15,3 +15,6 @@ def test_get_charset_ramp_invalid():
         get_charset_ramp("a")
     with pytest.raises(InvalidCharsetError):
         get_charset_ramp("")
+    with pytest.raises(InvalidCharsetError):
+        get_charset_ramp("   ")
+

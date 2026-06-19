@@ -22,6 +22,8 @@ def get_charset_ramp(name_or_custom: str, invert: bool = False) -> str:
         ramp = name_or_custom
     if len(ramp) < 2:
         raise InvalidCharsetError("Charset must contain at least two characters.")
+    if not ramp.strip():
+        raise InvalidCharsetError("Charset cannot contain only whitespace.")
     if invert:
         ramp = ramp[::-1]
     return ramp
