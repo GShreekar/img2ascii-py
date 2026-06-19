@@ -43,3 +43,57 @@ def test_ascii_art_renderer_class():
     renderer = AsciiArtRenderer(ramp="xy", auto_contrast=False)
     result = renderer.render(grid_rgb, grid_luma, grid_alpha)
     assert result == "xy\nyx"
+
+def test_map_luma_to_ascii_with_edges():
+    grid_luma = np.array([
+        [0.0, 255.0, 255.0],
+        [0.0, 255.0, 255.0],
+        [0.0, 255.0, 255.0]
+    ], dtype=np.float32)
+
+    result = map_luma_to_ascii(grid_luma, ramp="ABC", auto_contrast=False, use_edges=True)
+    assert "|" in result
+
+def test_map_luma_to_ascii_with_horizontal_edges():
+    grid_luma = np.array([
+        [0.0, 0.0, 0.0],
+        [255.0, 255.0, 255.0],
+        [255.0, 255.0, 255.0]
+    ], dtype=np.float32)
+
+    result = map_luma_to_ascii(grid_luma, ramp="ABC", auto_contrast=False, use_edges=True)
+    assert "-" in result
+
+def test_map_luma_to_ascii_with_diagonal_edges():
+    # Diagonal falling
+    grid_luma_falling = np.array([
+        [255.0, 0.0, 0.0],
+        [0.0, 255.0, 0.0],
+        [0.0, 0.0, 255.0]
+    ], dtype=np.float32)
+
+    result_falling = map_luma_to_ascii(grid_luma_falling, ramp="ABC", auto_contrast=False, use_edges=True)
+    assert "\\" in result_falling
+
+    # Diagonal rising
+    grid_luma_rising = np.array([
+        [0.0, 0.0, 255.0],
+        [0.0, 255.0, 0.0],
+        [255.0, 0.0, 0.0]
+    ], dtype=np.float32)
+
+    result_rising = map_luma_to_ascii(grid_luma_rising, ramp="ABC", auto_contrast=False, use_edges=True)
+    assert "/" in result_rising
+
+def test_map_luma_to_ascii_edges_missing_scipy():
+    grid_luma = np.array([
+        [0.0, 255.0],
+        [255.0, 0.0]
+    ], dtype=np.float32)
+    from unittest.mock import patch
+    import pytest
+
+    with patch("img2ascii.renderers.ascii_art.HAS_SCIPY", False):
+        with pytest.raises(ImportError) as exc_info:
+            map_luma_to_ascii(grid_luma, ramp="ABC", use_edges=True)
+        assert "scipy" in str(exc_info.value)

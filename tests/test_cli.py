@@ -98,3 +98,25 @@ def test_cli_unexpected_error(tmp_path):
         assert excinfo.value.code == 1
         assert "Unexpected error" in mock_stderr.getvalue()
 
+def test_cli_fast_and_edges(tmp_path):
+    img_path = tmp_path / "test.png"
+    img = Image.new("RGB", (10, 10), color=(255, 255, 255))
+    img.save(img_path)
+    
+    with patch("sys.argv", ["img2ascii", str(img_path), "--width", "5", "--char-aspect", "1.0", "--fast", "--edges"]), \
+         patch("sys.stdout", new_callable=io.StringIO) as mock_stdout:
+        main()
+        output = mock_stdout.getvalue()
+        assert len(output) > 0
+
+def test_cli_pixel_fast(tmp_path):
+    img_path = tmp_path / "test.png"
+    img = Image.new("RGB", (10, 10), color=(255, 255, 255))
+    img.save(img_path)
+    
+    with patch("sys.argv", ["img2ascii", str(img_path), "--width", "5", "--char-aspect", "1.0", "--mode", "pixel", "--fast"]), \
+         patch("sys.stdout", new_callable=io.StringIO) as mock_stdout:
+        main()
+        output = mock_stdout.getvalue()
+        assert "<!DOCTYPE html>" in output
+

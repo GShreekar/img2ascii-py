@@ -25,6 +25,8 @@ class AsciiConfig:
     dither: bool = False
     auto_contrast: bool = True
     invert: bool = False
+    fast: bool = False
+    edges: bool = False
 
 def convert_to_ascii(source: Union[Path, str, bytes, Image.Image], config: Optional[AsciiConfig] = None) -> str:
     """ Convert an image to ASCII art.
@@ -42,10 +44,10 @@ def convert_to_ascii(source: Union[Path, str, bytes, Image.Image], config: Optio
     
     rgba_prep, luma_prep = preprocess_image(rgba_arr)
     
-    rgb_grid, luma_grid, alpha_grid = sample_grid(rgba_prep, luma_prep, target_cols, target_rows)
+    rgb_grid, luma_grid, alpha_grid = sample_grid(rgba_prep, luma_prep, target_cols, target_rows, fast=config.fast)
     
     charset_ramp = get_charset_ramp(config.charset, invert=config.invert)
-    renderer = AsciiArtRenderer(charset_ramp, config.auto_contrast)
+    renderer = AsciiArtRenderer(charset_ramp, config.auto_contrast, use_edges=config.edges)
     plain_ascii = renderer.render(rgb_grid, luma_grid, alpha_grid)
     char_grid = [list(line) for line in plain_ascii.splitlines()]
     return build_ansi_output(char_grid, rgb_grid, use_color=config.color)
@@ -59,6 +61,7 @@ class PixelConfig:
     bg_color: str = "#000000"
     aspect_mode: str = "resize"
     allow_large: bool = False
+    fast: bool = False
 
 def convert_to_pixels(source: Union[Path, str, bytes, Image.Image], config: Optional[PixelConfig] = None) -> str:
     """ Convert an image to pixel-exact HTML.
@@ -78,7 +81,7 @@ def convert_to_pixels(source: Union[Path, str, bytes, Image.Image], config: Opti
         raise ImageTooLargeError(f"Grid size {target_cols}x{target_rows} exceeds safety limit.")
         
     rgba_prep, luma_prep = preprocess_image(rgba_arr)
-    rgb_grid, luma_grid, alpha_grid = sample_grid(rgba_prep, luma_prep, target_cols, target_rows)
+    rgb_grid, luma_grid, alpha_grid = sample_grid(rgba_prep, luma_prep, target_cols, target_rows, fast=config.fast)
     
     renderer = PixelExactRenderer(config.glyph, config.bg_color, config.aspect_mode)
     return renderer.render(rgb_grid, luma_grid, alpha_grid)

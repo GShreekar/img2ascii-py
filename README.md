@@ -85,6 +85,18 @@ Send binary stream output into the converter:
 cat input.png | img2ascii - --width 60 > output.txt
 ```
 
+#### 5. JIT-Accelerated Fast Mode
+Enable performance JIT acceleration using Numba for processing high-resolution files:
+```bash
+img2ascii path/to/large_image.jpg --width 200 --fast
+```
+
+#### 6. Edge Detection Enhancement
+Overlay edge boundaries using Sobel filters to construct line art matching visual structures:
+```bash
+img2ascii path/to/line_art.png --width 100 --edges
+```
+
 ---
 
 ## Library API Reference
@@ -102,7 +114,9 @@ config = AsciiConfig(
     char_aspect=2.0,       # Adjusts height/width ratio for terminal fonts
     charset="standard",    # Supports presets: standard, detailed, blocks, binary, minimal
     color=True,            # Enable ANSI color escape codes
-    auto_contrast=True     # Stretch luma values for maximum dynamic range
+    auto_contrast=True,    # Stretch luma values for maximum dynamic range
+    fast=True,             # Optional: Enable Numba JIT acceleration
+    edges=True             # Optional: Enable SciPy Sobel edge-enhancement
 )
 
 # Render from file path, raw bytes, or a PIL Image object
@@ -119,7 +133,8 @@ config = PixelConfig(
     width=120,
     bg_color="#111111",
     glyph="█",             # Character block used to draw each pixel
-    aspect_mode="resize"
+    aspect_mode="resize",
+    fast=True              # Optional: Enable Numba JIT acceleration
 )
 
 html_code = convert_to_pixels("image.png", config)

@@ -19,6 +19,8 @@ def main() -> None:
     parser.add_argument("--no-contrast", action="store_true", help="Disable automatic contrast adjustment.")
     parser.add_argument("-i", "--invert", action="store_true", help="Invert the character ramp.")
     parser.add_argument("--mode", choices=["ascii", "pixel"], default="ascii", help="Rendering mode: 'ascii' (default) or 'pixel' (HTML).")
+    parser.add_argument("--fast", action="store_true", help="Enable performance acceleration via JIT (requires numba).")
+    parser.add_argument("--edges", action="store_true", help="Enable edge enhancement filters (requires scipy).")
     
     # Pixel mode specific options
     parser.add_argument("--glyph", default="█", help="Glyph used for pixel representation (pixel mode only).")
@@ -51,7 +53,9 @@ def main() -> None:
                 color=args.color,
                 dither=args.dither,
                 auto_contrast=not args.no_contrast,
-                invert=args.invert
+                invert=args.invert,
+                fast=args.fast,
+                edges=args.edges
             )
             output = convert_to_ascii(source_data, ascii_config)
         else:
@@ -62,7 +66,8 @@ def main() -> None:
                 glyph=args.glyph,
                 bg_color=args.bg_color,
                 aspect_mode=args.aspect_mode,
-                allow_large=args.allow_large
+                allow_large=args.allow_large,
+                fast=args.fast
             )
             output = convert_to_pixels(source_data, pixel_config)
             
