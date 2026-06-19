@@ -10,7 +10,12 @@ def test_cli_help():
         with pytest.raises(SystemExit) as excinfo:
             main()
         assert excinfo.value.code == 0
-        assert "Convert images to ASCII art" in mock_stdout.getvalue()
+        help_output = mock_stdout.getvalue()
+        assert "Convert images to ASCII art" in help_output
+        for preset in ["standard", "detailed", "blocks", "binary", "minimal"]:
+            assert preset in help_output
+
+
 
 def test_cli_ascii_mode(tmp_path):
     # Create a small temporary image

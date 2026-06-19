@@ -3,6 +3,8 @@ import sys
 from typing import Union
 from img2ascii.api import convert_to_ascii, AsciiConfig, convert_to_pixels, PixelConfig
 from img2ascii.exceptions import Img2AsciiError
+from img2ascii.charsets import CHARSETS
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Convert images to ASCII art or pixel-exact HTML.")
@@ -10,7 +12,8 @@ def main() -> None:
     parser.add_argument("-w", "--width", type=int, default=None, help="Target width of the output grid.")
     parser.add_argument("--height", type=int, default=None, help="Target height of the output grid.")
     parser.add_argument("--char-aspect", type=float, default=2.0, help="Monospace character aspect ratio (height/width).")
-    parser.add_argument("--charset", default="standard", help="Charset name or custom character ramp.")
+    preset_names = ", ".join(CHARSETS.keys())
+    parser.add_argument("--charset", default="standard", help=f"Charset name (available: {preset_names}) or custom character ramp.")
     parser.add_argument("--color", action="store_true", help="Enable terminal ANSI truecolor output.")
     parser.add_argument("--dither", action="store_true", help="Enable dithering.")
     parser.add_argument("--no-contrast", action="store_true", help="Disable automatic contrast adjustment.")
