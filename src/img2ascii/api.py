@@ -8,6 +8,8 @@ from img2ascii.core.preprocess import preprocess_image
 from img2ascii.core.sampling import sample_grid
 from img2ascii.charsets import get_charset_ramp
 from img2ascii.renderers.ascii_art import AsciiArtRenderer
+from img2ascii.renderers.ansi import build_ansi_output
+
 
 @dataclass
 class AsciiConfig:
@@ -40,5 +42,8 @@ def convert_to_ascii(source: Union[Path, str, bytes], config: Optional[AsciiConf
     
     charset_ramp = get_charset_ramp(config.charset, invert=config.invert)
     renderer = AsciiArtRenderer(charset_ramp, config.auto_contrast)
-    return renderer.render(rgb_grid, luma_grid, alpha_grid)
+    plain_ascii = renderer.render(rgb_grid, luma_grid, alpha_grid)
+    char_grid = [list(line) for line in plain_ascii.splitlines()]
+    return build_ansi_output(char_grid, rgb_grid, use_color=config.color)
+
 
