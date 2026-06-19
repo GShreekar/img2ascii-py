@@ -1,135 +1,134 @@
-# img2ascii
+# img2ascii-py
 
-A high-performance Python library and CLI tool that converts images into text-based and HTML representations. Built with performance in mind using vectorized NumPy operations, `img2ascii` supports rich terminal truecolor formatting and pixel-exact HTML/CSS generation with compressed run-length encoding.
+[![PyPI version](https://img.shields.io/pypi/v/img2ascii-py.svg)](https://pypi.org/project/img2ascii-py/)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Python Version](https://img.shields.io/pypi/pyversions/img2ascii-py.svg)](https://pypi.org/project/img2ascii-py/)
+
+A high-performance Python library and command-line (CLI) utility that converts images into beautiful, styled ASCII art or pixel-exact HTML/CSS output. 
+
+Built with performance in mind using fully vectorized NumPy operations, `img2ascii-py` generates highly optimized terminal ANSI truecolor prints and run-length compressed HTML web pages.
 
 ---
 
 ## Features
 
-- **Vectorized Math Core**: Color preprocessing (contrast, brightness, gamma adjustments) and block-averaging downsampling are fully vectorized via NumPy.
-- **ASCII Art Mode**: Convert images to grayscale text characters using curated built-in ramps (standard, detailed, blocks, binary, minimal) or your own custom character sets.
-- **Terminal Truecolor (ANSI)**: Wrap ASCII art output with 24-bit ANSI escape codes, minimizing output size through a smart color state-machine.
-- **Pixel-Exact Web Output**: Generate highly optimized, pixel-exact HTML representations using Run-Length Encoding (RLE) to group consecutive identical colors into single `span` tags.
-- **Exif Transposition**: Automatically handles rotation metadata to ensure correct image orientation.
-- **Stream Piping**: Full CLI support for input and output streaming, allowing you to pipe image binary data into standard input.
+- **Vectorized Core**: Color pre-processing (gamma, brightness, contrast) and block downsampling are fully vectorized using NumPy.
+- **Terminal Truecolor**: Output ASCII art in 24-bit ANSI colors with a state-machine that minimizes escape-sequence overhead.
+- **Pixel-Exact HTML**: Render pixel-art pages utilizing Run-Length Encoding (RLE) to bundle matching color spans and optimize filesize.
+- **Curated Preset Ramps**: Includes preset charsets:
+  - `standard`: ` .:-=+*#%@`
+  - `detailed`: `$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\|()1{}[]?-_+~<>i! lI;:,"^`'. `
+  - `blocks`: `░▒▓█`
+  - `binary`: ` #`
+  - `minimal`: ` .o0@`
+  - Custom: Pass any string directly as your ramp!
+- **Smart Image Handling**: Automatically transposes images based on EXIF rotation tags and handles transparent PNG alpha channels gracefully.
+- **Full Stream Piping**: Pipe binary image streams directly into the CLI via `stdin`.
 
 ---
 
 ## Installation
 
-To install `img2ascii` locally, navigate to the project directory and install the package with pip (optionally in a virtual environment):
+Install the package directly from PyPI:
 
 ```bash
-pip install .
+pip install img2ascii-py
 ```
 
-For development dependencies, install the `dev` extra:
-
-```bash
-pip install -e ".[dev]"
-```
+### Optional Extras
+- To enable faster image sampling (via Numba JIT compilation):
+  ```bash
+  pip install "img2ascii-py[fast]"
+  ```
+- To enable edge-detection enhancement filters:
+  ```bash
+  pip install "img2ascii-py[edges]"
+  ```
+- Install all features at once:
+  ```bash
+  pip install "img2ascii-py[fast,edges]"
+  ```
 
 ---
 
 ## CLI Usage
 
-When installed, `img2ascii` provides a command-line script. You can run it directly:
+When installed, the `img2ascii` command is added to your path.
 
 ```bash
 img2ascii --help
 ```
 
-### Basic ASCII Conversion
-Convert an image to a text file with a width of 80 columns:
+### Quick Examples
+
+#### 1. Basic Grayscale ASCII Art
+Scale an image to a custom width and save the text file:
 ```bash
 img2ascii path/to/image.jpg --width 80 > art.txt
 ```
 
-### Colored ANSI Terminal Output
-Render an image in the terminal with 24-bit colors enabled:
+#### 2. Colored Terminal Print
+Display the image directly inside the terminal with 24-bit ANSI colors:
 ```bash
 img2ascii path/to/image.jpg --width 100 --color
 ```
 
-### Piping from Standard Input
-Pipe image binary data directly into the tool:
+#### 3. Pixel-Exact HTML/CSS Output
+Convert an image to a pixel-perfect HTML webpage using color-grouped HTML spans:
 ```bash
-cat photo.png | img2ascii - --width 60 > output.txt
+img2ascii path/to/image.jpg --width 150 --mode pixel > page.html
 ```
 
-### Pixel-Exact HTML Generation
-Generate an optimized HTML webpage representation of an image using the pixel-exact renderer:
+#### 4. Piping from Standard Input
+Send binary stream output into the converter:
 ```bash
-img2ascii path/to/image.jpg --width 120 --mode pixel > index.html
+cat input.png | img2ascii - --width 60 > output.txt
 ```
 
 ---
 
 ## Library API Reference
 
-### 1. ASCII Art Mode
-Use `convert_to_ascii` to programmatically render images to ASCII strings:
+You can also import and use `img2ascii` programmatically in your Python scripts.
+
+### Grayscale or Colored ASCII Art
 
 ```python
-from pathlib import Path
 from img2ascii.api import convert_to_ascii, AsciiConfig
 
+# Configure settings
 config = AsciiConfig(
     width=80,
-    char_aspect=2.0,
-    charset="standard",
-    color=True,
-    auto_contrast=True
+    char_aspect=2.0,       # Adjusts height/width ratio for terminal fonts
+    charset="standard",    # Supports presets: standard, detailed, blocks, binary, minimal
+    color=True,            # Enable ANSI color escape codes
+    auto_contrast=True     # Stretch luma values for maximum dynamic range
 )
 
-# Accepts file paths (str, Path), raw bytes, or PIL Image objects
-ascii_art = convert_to_ascii("image.jpg", config)
-print(ascii_art)
+# Render from file path, raw bytes, or a PIL Image object
+art = convert_to_ascii("image.jpg", config)
+print(art)
 ```
 
-### 2. Pixel-Exact Web Output (HTML)
-Use `convert_to_pixels` to produce optimized pixel-art HTML layouts:
+### Pixel-Exact Web Output (HTML)
 
 ```python
 from img2ascii.api import convert_to_pixels, PixelConfig
 
 config = PixelConfig(
-    width=150,
+    width=120,
     bg_color="#111111",
-    glyph="█"
+    glyph="█",             # Character block used to draw each pixel
+    aspect_mode="resize"
 )
 
-html_markup = convert_to_pixels("image.png", config)
+html_code = convert_to_pixels("image.png", config)
 with open("output.html", "w") as f:
-    f.write(html_markup)
-```
-
----
-
-## Development & Testing
-
-We maintain a strict quality assurance suite. You can run unit tests, type-checking, and style validation using:
-
-### Running Tests
-Execute the entire test suite and verify test coverage (99% coverage target):
-```bash
-pytest --cov=img2ascii tests/
-```
-
-### Code Formatting and Linting
-Ensure style compliance using Ruff:
-```bash
-ruff check src/
-```
-
-### Static Type-Checking
-Verify type safety using strict Mypy rules:
-```bash
-mypy --strict src/
+    f.write(html_code)
 ```
 
 ---
 
 ## License
 
-This project is licensed under the MIT License.
+This project is open-source and licensed under the MIT License.
