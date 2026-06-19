@@ -8,7 +8,13 @@ from img2ascii.exceptions import ImageTooLargeError, UnsupportedImageError
 MAX_PIXELS_DEFAULT = 50_000_000
 
 def load_image(source: Union[str, Path, bytes, bytearray, Image.Image], max_pixels: int = MAX_PIXELS_DEFAULT) -> np.ndarray:
-    """ Load image from file or bytes and return as RGBA NumPy array """
+    """ Load image from file or bytes and return as RGBA NumPy array
+    Args:
+        source: The image source (file path, bytes, or PIL Image)
+        max_pixels: The maximum number of pixels allowed
+    Returns:
+        np.ndarray: The RGBA image array
+    """
     img = None
     try:
         if isinstance(source, Image.Image):
