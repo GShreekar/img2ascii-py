@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "img2ascii"
 dynamic = ["version"]
 description = "A Python library and CLI tool to convert images to ASCII art and pixel-perfect HTML/SVG."
-readme = README.md
+readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
 authors = [

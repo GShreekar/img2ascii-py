@@ -2,6 +2,11 @@
 812h13b.md
 i132b1o.md
 jw713.md
+uqebu38.md
 
 __pycache__/
 .venv/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.coverage
