@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "img2ascii"
+name = "img2ascii-py"
 dynamic = ["version"]
 description = "A Python library and CLI tool to convert images to ASCII art and pixel-perfect HTML/SVG."
 readme = "README.md"
@@ -38,7 +38,7 @@ dev = [
     "hypothesis>=6.0.0",
 ]
 all = [
-    "img2ascii[fast,edges,dev]"
+    "img2ascii-py[fast,edges,dev]"
 ]
 
 [project.scripts]
