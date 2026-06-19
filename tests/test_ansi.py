@@ -1,6 +1,5 @@
 import os
 import numpy as np
-import pytest
 from unittest import mock
 from img2ascii.renderers.ansi import supports_color, build_ansi_output
 

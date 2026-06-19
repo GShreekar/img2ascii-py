@@ -1,5 +1,6 @@
 import numpy as np
 from PIL import Image
+from unittest.mock import patch
 from img2ascii.api import convert_to_ascii, AsciiConfig, convert_to_pixels, PixelConfig
 from img2ascii.exceptions import ImageTooLargeError
 import pytest
@@ -48,8 +49,6 @@ def test_convert_to_pixels_default_config():
     html = convert_to_pixels(img)
     assert "<!DOCTYPE html>" in html
     assert ".c_00ff00" in html
-
-from unittest.mock import patch
 
 def test_convert_to_pixels_too_large():
     img = Image.new("RGB", (1000, 1000), color=(0, 0, 0))

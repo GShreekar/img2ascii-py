@@ -1,10 +1,9 @@
 import io
-import sys
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 import pytest
 from PIL import Image
 from img2ascii.cli.main import main
-from img2ascii.exceptions import UnsupportedImageError
+
 
 def test_cli_help():
     with patch("sys.argv", ["img2ascii", "--help"]), patch("sys.stdout", new_callable=io.StringIO) as mock_stdout:

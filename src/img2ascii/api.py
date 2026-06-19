@@ -2,6 +2,7 @@ from typing import Optional
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Union
+from PIL import Image
 from img2ascii.core.loader import load_image
 from img2ascii.core.aspect import target_grid_size
 from img2ascii.core.preprocess import preprocess_image
@@ -25,7 +26,7 @@ class AsciiConfig:
     auto_contrast: bool = True
     invert: bool = False
 
-def convert_to_ascii(source: Union[Path, str, bytes], config: Optional[AsciiConfig] = None) -> str:
+def convert_to_ascii(source: Union[Path, str, bytes, Image.Image], config: Optional[AsciiConfig] = None) -> str:
     """ Convert an image to ASCII art.
     Args:
         source: Path to the image file.
@@ -59,7 +60,7 @@ class PixelConfig:
     aspect_mode: str = "resize"
     allow_large: bool = False
 
-def convert_to_pixels(source: Union[Path, str, bytes], config: Optional[PixelConfig] = None) -> str:
+def convert_to_pixels(source: Union[Path, str, bytes, Image.Image], config: Optional[PixelConfig] = None) -> str:
     """ Convert an image to pixel-exact HTML.
     Args:
         source: Path to the image file or bytes.
