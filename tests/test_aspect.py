@@ -1,5 +1,6 @@
 from img2ascii.core.aspect import target_grid_size
 
+
 def test_target_grid_size_defaults():
     # If both are None, default width should be 80.
     # Image aspect is 1:1, char aspect is 2.0. Output aspect should be 1:1 visually.
@@ -10,12 +11,14 @@ def test_target_grid_size_defaults():
     assert cols == 80
     assert rows == 40
 
+
 def test_target_grid_size_width_only():
     # Width specified as 120
     cols, rows = target_grid_size(100, 50, out_width=120, char_aspect=2.0)
     # Row = 120 * 50 / (100 * 2.0) = 30
     assert cols == 120
     assert rows == 30
+
 
 def test_target_grid_size_height_only():
     # Height specified as 30
@@ -24,11 +27,13 @@ def test_target_grid_size_height_only():
     assert cols == 120
     assert rows == 30
 
+
 def test_target_grid_size_both():
     # Both specified
     cols, rows = target_grid_size(100, 100, out_width=60, out_height=40)
     assert cols == 60
     assert rows == 40
+
 
 def test_target_grid_size_minimum():
     # Small dimensions should result in at least 1x1

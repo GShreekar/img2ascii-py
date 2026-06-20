@@ -3,16 +3,18 @@ from img2ascii.renderers.base import BaseRenderer
 
 try:
     from scipy.ndimage import sobel  # type: ignore[import-untyped]
+
     HAS_SCIPY = True
 except ImportError:
     HAS_SCIPY = False
+
 
 def map_luma_to_ascii(
     grid_luma: np.ndarray,
     ramp: str,
     auto_contrast: bool = True,
     use_edges: bool = False,
-    grid_alpha: np.ndarray | None = None
+    grid_alpha: np.ndarray | None = None,
 ) -> str:
     """Map a 2D luma array to ASCII characters using the provided character ramp, optionally using SciPy Sobel filters to outline edges.
     Args:
@@ -26,15 +28,15 @@ def map_luma_to_ascii(
     """
     min_luma = grid_luma.min()
     max_luma = grid_luma.max()
-    
+
     if auto_contrast and (max_luma - min_luma) > 1e-5:
         norm_luma = (grid_luma - min_luma) * 255.0 / (max_luma - min_luma)
     else:
         norm_luma = np.clip(grid_luma, 0.0, 255.0)
-        
+
     ramp_len = len(ramp)
     indices = np.round((norm_luma / 255.0) * (ramp_len - 1)).astype(np.int32)
-    
+
     rows, cols = indices.shape
     char_grid = [[ramp[idx] for idx in row] for row in indices]
 
@@ -74,14 +76,18 @@ def map_luma_to_ascii(
 
     return "\n".join("".join(row) for row in char_grid)
 
+
 class AsciiArtRenderer(BaseRenderer):
     """Simple ASCII Art renderer using blocks or standard characters."""
+
     def __init__(self, ramp: str, auto_contrast: bool = True, use_edges: bool = False):
         self.ramp = ramp
         self.auto_contrast = auto_contrast
         self.use_edges = use_edges
 
-    def render(self, grid_rgb: np.ndarray, grid_luma: np.ndarray, grid_alpha: np.ndarray) -> str:
+    def render(
+        self, grid_rgb: np.ndarray, grid_luma: np.ndarray, grid_alpha: np.ndarray
+    ) -> str:
         """Render the image as ASCII art.
         Args:
             grid_rgb: 3D array of RGB values (height, width, 3).
@@ -90,4 +96,6 @@ class AsciiArtRenderer(BaseRenderer):
         Returns:
             String containing the ASCII art.
         """
-        return map_luma_to_ascii(grid_luma, self.ramp, self.auto_contrast, self.use_edges, grid_alpha)
+        return map_luma_to_ascii(
+            grid_luma, self.ramp, self.auto_contrast, self.use_edges, grid_alpha
+        )

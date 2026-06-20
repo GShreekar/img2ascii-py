@@ -2,17 +2,22 @@ import numpy as np
 from img2ascii.renderers.base import BaseRenderer
 from img2ascii.color import rgb_to_hex
 
-class PixelExactRenderer(BaseRenderer):
-    """ Renderer that outputs pixel-exact HTML table with CSS background colors."""
 
-    def __init__(self, glyph: str = "█", bg_color: str = "#000000", aspect_mode: str = "resize"):
+class PixelExactRenderer(BaseRenderer):
+    """Renderer that outputs pixel-exact HTML table with CSS background colors."""
+
+    def __init__(
+        self, glyph: str = "█", bg_color: str = "#000000", aspect_mode: str = "resize"
+    ):
         super().__init__()
         self.glyph = glyph
         self.bg_color = bg_color
         self.aspect_mode = aspect_mode
 
     def run_length_encode_row(
-        self, colors: list[tuple[int, int, int] | tuple[int, int, int, float]], glyphs: list[str]
+        self,
+        colors: list[tuple[int, int, int] | tuple[int, int, int, float]],
+        glyphs: list[str],
     ) -> list[tuple[tuple[int, int, int] | tuple[int, int, int, float], str, int]]:
         """Run-length encode a single row of colors and glyphs.
         Args:
@@ -38,7 +43,9 @@ class PixelExactRenderer(BaseRenderer):
         runs.append((current_color, current_glyph, run_len))
         return runs
 
-    def render(self, grid_rgb: np.ndarray, grid_luma: np.ndarray, grid_alpha: np.ndarray) -> str:
+    def render(
+        self, grid_rgb: np.ndarray, grid_luma: np.ndarray, grid_alpha: np.ndarray
+    ) -> str:
         """Render the grid as an HTML table.
         Args:
             grid_rgb: (row, col, 3) array of RGB values
@@ -53,7 +60,12 @@ class PixelExactRenderer(BaseRenderer):
 
         for r in range(row_count):
             row_colors = [
-                (int(grid_rgb[r, c, 0]), int(grid_rgb[r, c, 1]), int(grid_rgb[r, c, 2]), float(grid_alpha[r, c]))
+                (
+                    int(grid_rgb[r, c, 0]),
+                    int(grid_rgb[r, c, 1]),
+                    int(grid_rgb[r, c, 2]),
+                    float(grid_alpha[r, c]),
+                )
                 for c in range(col_count)
             ]
             row_glyphs = [self.glyph] * col_count
@@ -61,7 +73,7 @@ class PixelExactRenderer(BaseRenderer):
             encoded_runs.append(runs)
             for color in row_colors:
                 unique_colors.add(color)
-        
+
         style_rules = [
             "body {",
             f"    background-color: {self.bg_color};",
@@ -73,9 +85,9 @@ class PixelExactRenderer(BaseRenderer):
             "    line-height: 1.0;",
             "    margin: 0;",
             "    white-space: pre;",
-            "}"
+            "}",
         ]
-        
+
         rgb2css = {}
         for color in sorted(unique_colors):
             r, g, b, a = color
@@ -89,10 +101,12 @@ class PixelExactRenderer(BaseRenderer):
                 class_name = f"c_{r:02x}{g:02x}{b:02x}{a_hex}"
                 rgb2css[color] = class_name
                 a_val = round(a, 3)
-                style_rules.append(f".{class_name} {{ color: rgba({r}, {g}, {b}, {a_val}); }}")
-            
+                style_rules.append(
+                    f".{class_name} {{ color: rgba({r}, {g}, {b}, {a_val}); }}"
+                )
+
         style_block = "<style>\n" + "\n".join(style_rules) + "\n</style>"
-        
+
         markup_lines = ["<pre>"]
         for r in range(row_count):
             row_spans = []
@@ -103,7 +117,7 @@ class PixelExactRenderer(BaseRenderer):
             markup_lines.append("".join(row_spans))
         markup_lines.append("</pre>")
         markup_body = "\n".join(markup_lines)
-        
+
         html = (
             "<!DOCTYPE html>\n"
             "<html>\n"

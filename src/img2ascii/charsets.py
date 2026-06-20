@@ -5,11 +5,12 @@ CHARSETS = {
     "detailed": r"$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\|()1{}[]?-_+~<>i! lI;:,\"^`'. ",
     "blocks": "░▒▓█",
     "binary": " #",
-    "minimal": " .o0@"
+    "minimal": " .o0@",
 }
 
+
 def get_charset_ramp(name_or_custom: str, invert: bool = False) -> str:
-    """Returns a normalized charset string by looking up a preset name or parsing the input directly. 
+    """Returns a normalized charset string by looking up a preset name or parsing the input directly.
     Args:
         name_or_custom: name or custom charset string.
         invert: If true, reverses the order of the characters.
@@ -27,4 +28,3 @@ def get_charset_ramp(name_or_custom: str, invert: bool = False) -> str:
     if invert:
         ramp = ramp[::-1]
     return ramp
-    

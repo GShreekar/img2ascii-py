@@ -11,8 +11,8 @@ from img2ascii.charsets import get_charset_ramp
 from img2ascii.renderers.ascii_art import AsciiArtRenderer
 from img2ascii.renderers.ansi import build_ansi_output
 from img2ascii.renderers.pixel_exact import PixelExactRenderer
+from img2ascii.renderers.svg import SvgRenderer
 from img2ascii.exceptions import ImageTooLargeError
-
 
 
 @dataclass
@@ -28,8 +28,11 @@ class AsciiConfig:
     fast: bool = False
     edges: bool = False
 
-def convert_to_ascii(source: Union[Path, str, bytes, Image.Image], config: Optional[AsciiConfig] = None) -> str:
-    """ Convert an image to ASCII art.
+
+def convert_to_ascii(
+    source: Union[Path, str, bytes, Image.Image], config: Optional[AsciiConfig] = None
+) -> str:
+    """Convert an image to ASCII art.
     Args:
         source: Path to the image file.
         config: Configuration for the conversion.
@@ -40,17 +43,24 @@ def convert_to_ascii(source: Union[Path, str, bytes, Image.Image], config: Optio
         config = AsciiConfig()
     rgba_arr = load_image(source)
     height, width = rgba_arr.shape[:2]
-    target_cols, target_rows = target_grid_size(width, height, config.width, config.height, config.char_aspect)
-    
+    target_cols, target_rows = target_grid_size(
+        width, height, config.width, config.height, config.char_aspect
+    )
+
     rgba_prep, luma_prep = preprocess_image(rgba_arr)
-    
-    rgb_grid, luma_grid, alpha_grid = sample_grid(rgba_prep, luma_prep, target_cols, target_rows, fast=config.fast)
-    
+
+    rgb_grid, luma_grid, alpha_grid = sample_grid(
+        rgba_prep, luma_prep, target_cols, target_rows, fast=config.fast
+    )
+
     charset_ramp = get_charset_ramp(config.charset, invert=config.invert)
-    renderer = AsciiArtRenderer(charset_ramp, config.auto_contrast, use_edges=config.edges)
+    renderer = AsciiArtRenderer(
+        charset_ramp, config.auto_contrast, use_edges=config.edges
+    )
     plain_ascii = renderer.render(rgb_grid, luma_grid, alpha_grid)
     char_grid = [list(line) for line in plain_ascii.splitlines()]
     return build_ansi_output(char_grid, rgb_grid, use_color=config.color)
+
 
 @dataclass
 class PixelConfig:
@@ -64,8 +74,11 @@ class PixelConfig:
     fast: bool = False
     max_cells: int = 16_000_000
 
-def convert_to_pixels(source: Union[Path, str, bytes, Image.Image], config: Optional[PixelConfig] = None) -> str:
-    """ Convert an image to pixel-exact HTML.
+
+def convert_to_pixels(
+    source: Union[Path, str, bytes, Image.Image], config: Optional[PixelConfig] = None
+) -> str:
+    """Convert an image to pixel-exact HTML.
     Args:
         source: Path to the image file or bytes.
         config: Configuration for the pixel-exact rendering.
@@ -76,19 +89,53 @@ def convert_to_pixels(source: Union[Path, str, bytes, Image.Image], config: Opti
         config = PixelConfig()
     rgba_arr = load_image(source)
     height, width = rgba_arr.shape[:2]
-    target_cols, target_rows = target_grid_size(width, height, config.width, config.height, config.char_aspect)
-    
+    target_cols, target_rows = target_grid_size(
+        width, height, config.width, config.height, config.char_aspect
+    )
+
     if (target_cols * target_rows) > config.max_cells and not config.allow_large:
         raise ImageTooLargeError(
             f"Grid size {target_cols}x{target_rows} ({target_cols * target_rows} cells) exceeds safety limit of {config.max_cells} cells. "
             f"Use --width/--height or scale down, or bypass with --allow-large."
         )
-        
+
     rgba_prep, luma_prep = preprocess_image(rgba_arr)
-    rgb_grid, luma_grid, alpha_grid = sample_grid(rgba_prep, luma_prep, target_cols, target_rows, fast=config.fast)
-    
+    rgb_grid, luma_grid, alpha_grid = sample_grid(
+        rgba_prep, luma_prep, target_cols, target_rows, fast=config.fast
+    )
+
     renderer = PixelExactRenderer(config.glyph, config.bg_color, config.aspect_mode)
     return renderer.render(rgb_grid, luma_grid, alpha_grid)
 
 
+def convert_to_svg(
+    source: Union[Path, str, bytes, Image.Image], config: Optional[PixelConfig] = None
+) -> str:
+    """Convert an image to pixel-exact SVG vector graphic.
+    Args:
+        source: Path to the image file or bytes.
+        config: Configuration for the rendering (shares fields with PixelConfig).
+    Returns:
+        String containing the SVG document.
+    """
+    if config is None:
+        config = PixelConfig()
+    rgba_arr = load_image(source)
+    height, width = rgba_arr.shape[:2]
+    target_cols, target_rows = target_grid_size(
+        width, height, config.width, config.height, config.char_aspect
+    )
 
+    if (target_cols * target_rows) > config.max_cells and not config.allow_large:
+        raise ImageTooLargeError(
+            f"Grid size {target_cols}x{target_rows} ({target_cols * target_rows} cells) exceeds safety limit of {config.max_cells} cells. "
+            f"Use --width/--height or scale down, or bypass with --allow-large."
+        )
+
+    rgba_prep, luma_prep = preprocess_image(rgba_arr)
+    rgb_grid, luma_grid, alpha_grid = sample_grid(
+        rgba_prep, luma_prep, target_cols, target_rows, fast=config.fast
+    )
+
+    renderer = SvgRenderer(config.bg_color, config.char_aspect)
+    return renderer.render(rgb_grid, luma_grid, alpha_grid)

@@ -1,5 +1,5 @@
 def rgb_to_hex(r: int, g: int, b: int) -> str:
-    """ Converts RGB color to hex code.
+    """Converts RGB color to hex code.
     Args:
         r: Red channel value (0-255).
         g: Green channel value (0-255).

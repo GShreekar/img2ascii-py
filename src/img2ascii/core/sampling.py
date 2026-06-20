@@ -3,11 +3,20 @@ from PIL import Image
 
 try:
     from numba import jit  # type: ignore[import-untyped]
+
     HAS_NUMBA = True
 except ImportError:
     HAS_NUMBA = False
 
-def _numba_block_avg_3d(arr: np.ndarray, rows: int, cols: int, block_height: int, block_width: int, channels: int) -> np.ndarray:
+
+def _numba_block_avg_3d(
+    arr: np.ndarray,
+    rows: int,
+    cols: int,
+    block_height: int,
+    block_width: int,
+    channels: int,
+) -> np.ndarray:
     out = np.zeros((rows, cols, channels), dtype=np.float32)
     for r in range(rows):
         for c in range(cols):
@@ -19,7 +28,10 @@ def _numba_block_avg_3d(arr: np.ndarray, rows: int, cols: int, block_height: int
                 out[r, c, ch] = total / (block_height * block_width)
     return out
 
-def _numba_block_avg_2d(arr: np.ndarray, rows: int, cols: int, block_height: int, block_width: int) -> np.ndarray:
+
+def _numba_block_avg_2d(
+    arr: np.ndarray, rows: int, cols: int, block_height: int, block_width: int
+) -> np.ndarray:
     out = np.zeros((rows, cols), dtype=np.float32)
     for r in range(rows):
         for c in range(cols):
@@ -30,12 +42,14 @@ def _numba_block_avg_2d(arr: np.ndarray, rows: int, cols: int, block_height: int
             out[r, c] = total / (block_height * block_width)
     return out
 
+
 if HAS_NUMBA:
     _numba_block_avg_3d_jit = jit(nopython=True, cache=True)(_numba_block_avg_3d)
     _numba_block_avg_2d_jit = jit(nopython=True, cache=True)(_numba_block_avg_2d)
 else:
     _numba_block_avg_3d_jit = _numba_block_avg_3d
     _numba_block_avg_2d_jit = _numba_block_avg_2d
+
 
 def sample_grid(
     rgba_arr: np.ndarray, luma_arr: np.ndarray, cols: int, rows: int, fast: bool = False
@@ -53,41 +67,51 @@ def sample_grid(
     """
     height, width, channels = rgba_arr.shape
     if cols == width and rows == height:
-        return rgba_arr[:,:,:3], luma_arr, rgba_arr[:,:,3] / 255.0
-    
+        return rgba_arr[:, :, :3], luma_arr, rgba_arr[:, :, 3] / 255.0
+
     block_width = max(1, width // cols)
     block_height = max(1, height // rows)
     target_width = block_width * cols
     target_height = block_height * rows
-    
+
     rgba_uint8 = np.clip(rgba_arr, 0.0, 255.0).astype(np.uint8)
     luma_uint8 = np.clip(luma_arr, 0.0, 255.0).astype(np.uint8)
-    
+
     rgba_resized = np.array(
-        Image.fromarray(rgba_uint8).resize((target_width, target_height), Image.Resampling.LANCZOS),
-        dtype=np.float32
+        Image.fromarray(rgba_uint8).resize(
+            (target_width, target_height), Image.Resampling.LANCZOS
+        ),
+        dtype=np.float32,
     )
     luma_resized = np.array(
-        Image.fromarray(luma_uint8).resize((target_width, target_height), Image.Resampling.LANCZOS),
-        dtype=np.float32
+        Image.fromarray(luma_uint8).resize(
+            (target_width, target_height), Image.Resampling.LANCZOS
+        ),
+        dtype=np.float32,
     )
-    
+
     if fast:
         if not HAS_NUMBA:
             raise ImportError(
                 "Optional dependency 'numba' is required for fast mode. "
                 "Install it with: pip install img2ascii-py[fast]"
             )
-        rgba_block_avg = _numba_block_avg_3d_jit(rgba_resized, rows, cols, block_height, block_width, channels)
-        luma_block_avg = _numba_block_avg_2d_jit(luma_resized, rows, cols, block_height, block_width)
+        rgba_block_avg = _numba_block_avg_3d_jit(
+            rgba_resized, rows, cols, block_height, block_width, channels
+        )
+        luma_block_avg = _numba_block_avg_2d_jit(
+            luma_resized, rows, cols, block_height, block_width
+        )
     else:
-        rgba_reshaped = rgba_resized.reshape(rows, block_height, cols, block_width, channels)
+        rgba_reshaped = rgba_resized.reshape(
+            rows, block_height, cols, block_width, channels
+        )
         rgba_block_avg = rgba_reshaped.mean(axis=(1, 3))
-        
+
         luma_reshaped = luma_resized.reshape(rows, block_height, cols, block_width)
         luma_block_avg = luma_reshaped.mean(axis=(1, 3))
-    
+
     rgb_arr = rgba_block_avg[:, :, :3]
     alpha_arr = rgba_block_avg[:, :, 3] / 255.0
-    
+
     return rgb_arr, luma_block_avg, alpha_arr

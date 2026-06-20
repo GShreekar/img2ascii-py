@@ -7,8 +7,12 @@ from img2ascii.exceptions import ImageTooLargeError, UnsupportedImageError
 
 MAX_PIXELS_DEFAULT = 50_000_000
 
-def load_image(source: Union[str, Path, bytes, bytearray, Image.Image], max_pixels: int = MAX_PIXELS_DEFAULT) -> np.ndarray:
-    """ Load image from file or bytes and return as RGBA NumPy array
+
+def load_image(
+    source: Union[str, Path, bytes, bytearray, Image.Image],
+    max_pixels: int = MAX_PIXELS_DEFAULT,
+) -> np.ndarray:
+    """Load image from file or bytes and return as RGBA NumPy array
     Args:
         source: The image source (file path, bytes, or PIL Image)
         max_pixels: The maximum number of pixels allowed
@@ -27,15 +31,15 @@ def load_image(source: Union[str, Path, bytes, bytearray, Image.Image], max_pixe
             img = Image.open(source)
         else:
             raise UnsupportedImageError(f"Unsupported image type: {type(source)}")
-        
+
         width, height = img.size
         if width * height > max_pixels:
             raise ImageTooLargeError(f"Image exceeds {max_pixels} pixels.")
-        
+
         img = ImageOps.exif_transpose(img)
         if img.mode != "RGBA":
             img = img.convert("RGBA")
-        
+
         return np.array(img).astype(np.uint8)
     except UnsupportedImageError:
         raise

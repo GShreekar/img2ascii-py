@@ -3,6 +3,7 @@ import numpy as np
 from unittest import mock
 from img2ascii.renderers.ansi import supports_color, build_ansi_output
 
+
 def test_supports_color():
     with mock.patch.dict(os.environ, {"NO_COLOR": "1"}):
         assert not supports_color()
@@ -22,19 +23,17 @@ def test_supports_color():
     with mock.patch.dict(os.environ, {}, clear=True):
         assert not supports_color()
 
+
 def test_build_ansi_output_no_color():
     char_grid = [["x", "y"], ["z", " "]]
     grid_rgb = np.zeros((2, 2, 3), dtype=np.float32)
-    
+
     result = build_ansi_output(char_grid, grid_rgb, use_color=False)
     assert result == "xy\nz "
 
+
 def test_build_ansi_output_with_color():
-    char_grid = [
-        ["x", "y", "y"],
-        ["z", "w", " "],
-        [" ", "a", " "]
-    ]
+    char_grid = [["x", "y", "y"], ["z", "w", " "], [" ", "a", " "]]
     # Row 0: Red, Red, Red
     # Row 1: Green, Blue, (Black/ignored)
     # Row 2: (Black/ignored), Red, (Black/ignored)

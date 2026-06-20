@@ -1,32 +1,93 @@
 import argparse
 import sys
 from typing import Union
-from img2ascii.api import convert_to_ascii, AsciiConfig, convert_to_pixels, PixelConfig
+from img2ascii.api import (
+    convert_to_ascii,
+    AsciiConfig,
+    convert_to_pixels,
+    PixelConfig,
+    convert_to_svg,
+)
 from img2ascii.exceptions import Img2AsciiError
 from img2ascii.charsets import CHARSETS
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Convert images to ASCII art or pixel-exact HTML.")
-    parser.add_argument("source", help="Path to the input image, or '-' to read from standard input.")
-    parser.add_argument("-w", "--width", type=int, default=None, help="Target width of the output grid.")
-    parser.add_argument("--height", type=int, default=None, help="Target height of the output grid.")
-    parser.add_argument("--char-aspect", type=float, default=2.0, help="Monospace character aspect ratio (height/width).")
+    parser = argparse.ArgumentParser(
+        description="Convert images to ASCII art or pixel-exact HTML."
+    )
+    parser.add_argument(
+        "source", help="Path to the input image, or '-' to read from standard input."
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        default=None,
+        help="Path to the output file (if not specified, outputs to stdout).",
+    )
+    parser.add_argument(
+        "-w", "--width", type=int, default=None, help="Target width of the output grid."
+    )
+    parser.add_argument(
+        "--height", type=int, default=None, help="Target height of the output grid."
+    )
+    parser.add_argument(
+        "--char-aspect",
+        type=float,
+        default=2.0,
+        help="Monospace character aspect ratio (height/width).",
+    )
     preset_names = ", ".join(CHARSETS.keys())
-    parser.add_argument("--charset", default="standard", help=f"Charset name (available: {preset_names}) or custom character ramp.")
-    parser.add_argument("--color", action="store_true", help="Enable terminal ANSI truecolor output.")
+    parser.add_argument(
+        "--charset",
+        default="standard",
+        help=f"Charset name (available: {preset_names}) or custom character ramp.",
+    )
+    parser.add_argument(
+        "--color", action="store_true", help="Enable terminal ANSI truecolor output."
+    )
     parser.add_argument("--dither", action="store_true", help="Enable dithering.")
-    parser.add_argument("--no-contrast", action="store_true", help="Disable automatic contrast adjustment.")
-    parser.add_argument("-i", "--invert", action="store_true", help="Invert the character ramp.")
-    parser.add_argument("--mode", choices=["ascii", "pixel"], default="ascii", help="Rendering mode: 'ascii' (default) or 'pixel' (HTML).")
-    parser.add_argument("--fast", action="store_true", help="Enable performance acceleration via JIT (requires numba).")
-    parser.add_argument("--edges", action="store_true", help="Enable edge enhancement filters (requires scipy).")
-    
-    # Pixel mode specific options
-    parser.add_argument("--glyph", default="█", help="Glyph used for pixel representation (pixel mode only).")
-    parser.add_argument("--bg-color", default="#000000", help="HTML background color (pixel mode only).")
-    parser.add_argument("--aspect-mode", default="resize", help="HTML aspect mode (pixel mode only).")
-    parser.add_argument("--allow-large", action="store_true", help="Allow processing very large grids in pixel mode.")
+    parser.add_argument(
+        "--no-contrast",
+        action="store_true",
+        help="Disable automatic contrast adjustment.",
+    )
+    parser.add_argument(
+        "-i", "--invert", action="store_true", help="Invert the character ramp."
+    )
+    parser.add_argument(
+        "--mode",
+        choices=["ascii", "pixel", "svg"],
+        default="ascii",
+        help="Rendering mode: 'ascii' (default), 'pixel' (HTML), or 'svg' (SVG).",
+    )
+    parser.add_argument(
+        "--fast",
+        action="store_true",
+        help="Enable performance acceleration via JIT (requires numba).",
+    )
+    parser.add_argument(
+        "--edges",
+        action="store_true",
+        help="Enable edge enhancement filters (requires scipy).",
+    )
+
+    parser.add_argument(
+        "--glyph",
+        default="█",
+        help="Glyph used for pixel representation (pixel mode only).",
+    )
+    parser.add_argument(
+        "--bg-color", default="#000000", help="HTML background color (pixel mode only)."
+    )
+    parser.add_argument(
+        "--aspect-mode", default="resize", help="HTML aspect mode (pixel mode only)."
+    )
+    parser.add_argument(
+        "--allow-large",
+        action="store_true",
+        help="Allow processing very large grids in pixel mode.",
+    )
 
     args = parser.parse_args()
 
@@ -55,9 +116,21 @@ def main() -> None:
                 auto_contrast=not args.no_contrast,
                 invert=args.invert,
                 fast=args.fast,
-                edges=args.edges
+                edges=args.edges,
             )
             output = convert_to_ascii(source_data, ascii_config)
+        elif args.mode == "pixel":
+            pixel_config = PixelConfig(
+                width=args.width,
+                height=args.height,
+                char_aspect=args.char_aspect,
+                glyph=args.glyph,
+                bg_color=args.bg_color,
+                aspect_mode=args.aspect_mode,
+                allow_large=args.allow_large,
+                fast=args.fast,
+            )
+            output = convert_to_pixels(source_data, pixel_config)
         else:
             pixel_config = PixelConfig(
                 width=args.width,
@@ -67,13 +140,19 @@ def main() -> None:
                 bg_color=args.bg_color,
                 aspect_mode=args.aspect_mode,
                 allow_large=args.allow_large,
-                fast=args.fast
+                fast=args.fast,
             )
-            output = convert_to_pixels(source_data, pixel_config)
-            
-        sys.stdout.write(output)
-        if not output.endswith("\n") and args.mode == "ascii":
-            sys.stdout.write("\n")
+            output = convert_to_svg(source_data, pixel_config)
+
+        if args.output:
+            with open(args.output, "w", encoding="utf-8") as f:
+                f.write(output)
+                if not output.endswith("\n") and args.mode == "ascii":
+                    f.write("\n")
+        else:
+            sys.stdout.write(output)
+            if not output.endswith("\n") and args.mode == "ascii":
+                sys.stdout.write("\n")
     except Img2AsciiError as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
