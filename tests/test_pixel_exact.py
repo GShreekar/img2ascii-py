@@ -45,3 +45,25 @@ def test_pixel_exact_renderer_html():
     # Check markup
     assert '<span class="c_ff0000">██</span>' in html
     assert '<span class="c_00ff00">██</span>' in html
+
+def test_pixel_exact_renderer_transparency():
+    renderer = PixelExactRenderer(glyph="█", bg_color="#111111")
+    grid_rgb = np.zeros((2, 2, 3), dtype=np.float32)
+    grid_rgb[0, 0] = [255, 0, 0]
+    grid_rgb[0, 1] = [255, 0, 0]
+    grid_rgb[1, 0] = [0, 255, 0]
+    grid_rgb[1, 1] = [0, 255, 0]
+    
+    grid_luma = np.zeros((2, 2), dtype=np.float32)
+    # Row 0 is transparent (alpha = 0.5), Row 1 is opaque (alpha = 1.0)
+    grid_alpha = np.zeros((2, 2), dtype=np.float32)
+    grid_alpha[0, :] = 0.5
+    grid_alpha[1, :] = 1.0
+    
+    html = renderer.render(grid_rgb, grid_luma, grid_alpha)
+    
+    assert "<!DOCTYPE html>" in html
+    assert ".c_ff000080 { color: rgba(255, 0, 0, 0.5); }" in html
+    assert ".c_00ff00 { color: #00ff00; }" in html
+    assert '<span class="c_ff000080">██</span>' in html
+    assert '<span class="c_00ff00">██</span>' in html

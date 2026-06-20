@@ -27,11 +27,7 @@ def test_preprocess_transparency():
     rgba[:, :, 3] = 127 # ~0.5 alpha
 
     _, luma_out = preprocess_image(rgba)
-    # alpha_norm = 127/255 = 0.498039
-    # red_luma = 255 * 0.299 = 76.245
-    # blended_luma = (red_luma * alpha_norm) + (255.0 * (1.0 - alpha_norm))
-    alpha_norm = 127.0 / 255.0
-    expected_luma = ((255.0 * 0.299) * alpha_norm) + (255.0 * (1.0 - alpha_norm))
+    expected_luma = 255.0 * 0.299
     np.testing.assert_allclose(luma_out, expected_luma, atol=1e-3)
 
 def test_preprocess_brightness_contrast_gamma():

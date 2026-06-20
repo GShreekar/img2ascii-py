@@ -62,6 +62,7 @@ class PixelConfig:
     aspect_mode: str = "resize"
     allow_large: bool = False
     fast: bool = False
+    max_cells: int = 16_000_000
 
 def convert_to_pixels(source: Union[Path, str, bytes, Image.Image], config: Optional[PixelConfig] = None) -> str:
     """ Convert an image to pixel-exact HTML.
@@ -77,8 +78,11 @@ def convert_to_pixels(source: Union[Path, str, bytes, Image.Image], config: Opti
     height, width = rgba_arr.shape[:2]
     target_cols, target_rows = target_grid_size(width, height, config.width, config.height, config.char_aspect)
     
-    if (target_cols * target_rows) > 16_000_000 and not config.allow_large:
-        raise ImageTooLargeError(f"Grid size {target_cols}x{target_rows} exceeds safety limit.")
+    if (target_cols * target_rows) > config.max_cells and not config.allow_large:
+        raise ImageTooLargeError(
+            f"Grid size {target_cols}x{target_rows} ({target_cols * target_rows} cells) exceeds safety limit of {config.max_cells} cells. "
+            f"Use --width/--height or scale down, or bypass with --allow-large."
+        )
         
     rgba_prep, luma_prep = preprocess_image(rgba_arr)
     rgb_grid, luma_grid, alpha_grid = sample_grid(rgba_prep, luma_prep, target_cols, target_rows, fast=config.fast)

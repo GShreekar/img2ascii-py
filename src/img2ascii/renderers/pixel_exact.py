@@ -12,11 +12,11 @@ class PixelExactRenderer(BaseRenderer):
         self.aspect_mode = aspect_mode
 
     def run_length_encode_row(
-        self, colors: list[tuple[int, int, int]], glyphs: list[str]
-    ) -> list[tuple[tuple[int, int, int], str, int]]:
+        self, colors: list[tuple[int, int, int] | tuple[int, int, int, float]], glyphs: list[str]
+    ) -> list[tuple[tuple[int, int, int] | tuple[int, int, int, float], str, int]]:
         """Run-length encode a single row of colors and glyphs.
         Args:
-            colors: list of RGB tuples
+            colors: list of RGB or RGBA tuples
             glyphs: list of glyphs
         Returns:
             list of (color, glyph, count) tuples
@@ -43,7 +43,7 @@ class PixelExactRenderer(BaseRenderer):
         Args:
             grid_rgb: (row, col, 3) array of RGB values
             grid_luma: (row, col) array of luma values (ignored)
-            grid_alpha: (row, col) array of alpha values (ignored)
+            grid_alpha: (row, col) array of alpha values
         Returns:
             str: HTML table string with pixel-exact colors
         """
@@ -53,7 +53,7 @@ class PixelExactRenderer(BaseRenderer):
 
         for r in range(row_count):
             row_colors = [
-                (int(grid_rgb[r, c, 0]), int(grid_rgb[r, c, 1]), int(grid_rgb[r, c, 2]))
+                (int(grid_rgb[r, c, 0]), int(grid_rgb[r, c, 1]), int(grid_rgb[r, c, 2]), float(grid_alpha[r, c]))
                 for c in range(col_count)
             ]
             row_glyphs = [self.glyph] * col_count
@@ -78,10 +78,18 @@ class PixelExactRenderer(BaseRenderer):
         
         rgb2css = {}
         for color in sorted(unique_colors):
-            rgb_hex = rgb_to_hex(color[0], color[1], color[2])
-            class_name = f"c_{rgb_hex[1:]}"
-            rgb2css[color] = class_name
-            style_rules.append(f".{class_name} {{ color: {rgb_hex}; }}")
+            r, g, b, a = color
+            if a >= 0.999:
+                rgb_hex = rgb_to_hex(r, g, b)
+                class_name = f"c_{rgb_hex[1:]}"
+                rgb2css[color] = class_name
+                style_rules.append(f".{class_name} {{ color: {rgb_hex}; }}")
+            else:
+                a_hex = f"{int(round(a * 255)):02x}"
+                class_name = f"c_{r:02x}{g:02x}{b:02x}{a_hex}"
+                rgb2css[color] = class_name
+                a_val = round(a, 3)
+                style_rules.append(f".{class_name} {{ color: rgba({r}, {g}, {b}, {a_val}); }}")
             
         style_block = "<style>\n" + "\n".join(style_rules) + "\n</style>"
         

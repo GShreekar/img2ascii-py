@@ -28,8 +28,6 @@ def preprocess_image(rgba_arr: np.ndarray, brightness: float = 1.0, contrast: fl
 
     red_weight, green_weight, blue_weight = luma_weights
     luma = rgba_arr[:,:,0] * red_weight + rgba_arr[:,:,1] * green_weight + rgba_arr[:,:,2] * blue_weight
-    alpha_norm = np.clip(alpha / 255.0, 0.0, 1.0)
-    luma = (luma * alpha_norm) + (255.0 * (1.0 - alpha_norm))
     luma = np.clip(luma, 0.0, 255.0)
     
     return rgba_arr, luma

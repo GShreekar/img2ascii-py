@@ -11,7 +11,8 @@ def map_luma_to_ascii(
     grid_luma: np.ndarray,
     ramp: str,
     auto_contrast: bool = True,
-    use_edges: bool = False
+    use_edges: bool = False,
+    grid_alpha: np.ndarray | None = None
 ) -> str:
     """Map a 2D luma array to ASCII characters using the provided character ramp, optionally using SciPy Sobel filters to outline edges.
     Args:
@@ -19,6 +20,7 @@ def map_luma_to_ascii(
         ramp: String of ASCII characters to use for mapping.
         auto_contrast: Whether to automatically adjust the contrast of the luma values.
         use_edges: Whether to map edge contours to line characters using SciPy Sobel filter.
+        grid_alpha: Optional 2D array of alpha values (0.0-1.0).
     Returns:
         String containing the ASCII art.
     """
@@ -64,6 +66,12 @@ def map_luma_to_ascii(
                         else:
                             char_grid[r][c] = "/"
 
+    if grid_alpha is not None:
+        for r in range(rows):
+            for c in range(cols):
+                if grid_alpha[r, c] < 0.5:
+                    char_grid[r][c] = " "
+
     return "\n".join("".join(row) for row in char_grid)
 
 class AsciiArtRenderer(BaseRenderer):
@@ -82,4 +90,4 @@ class AsciiArtRenderer(BaseRenderer):
         Returns:
             String containing the ASCII art.
         """
-        return map_luma_to_ascii(grid_luma, self.ramp, self.auto_contrast, self.use_edges)
+        return map_luma_to_ascii(grid_luma, self.ramp, self.auto_contrast, self.use_edges, grid_alpha)
