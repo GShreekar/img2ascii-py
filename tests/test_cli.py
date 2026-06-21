@@ -302,3 +302,29 @@ def test_cli_output_file(tmp_path):
         assert output_path_ascii.exists()
         content = output_path_ascii.read_text(encoding="utf-8")
         assert content.endswith("\n")
+
+
+def test_cli_palette_size(tmp_path):
+    img_path = tmp_path / "test.png"
+    img = Image.new("RGB", (10, 10), color=(255, 255, 255))
+    img.save(img_path)
+
+    with (
+        patch(
+            "sys.argv",
+            [
+                "img2ascii",
+                str(img_path),
+                "--width",
+                "5",
+                "--mode",
+                "pixel",
+                "--palette-size",
+                "8",
+            ],
+        ),
+        patch("sys.stdout", new_callable=io.StringIO) as mock_stdout,
+    ):
+        main()
+        output = mock_stdout.getvalue()
+        assert "<!DOCTYPE html>" in output

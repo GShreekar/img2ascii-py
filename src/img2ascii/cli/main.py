@@ -91,6 +91,12 @@ def main() -> None:
         action="store_true",
         help="Allow processing very large grids in pixel mode.",
     )
+    parser.add_argument(
+        "--palette-size",
+        type=int,
+        default=None,
+        help="Number of colors to quantize the image to (pixel/SVG modes only). Must be between 2 and 256.",
+    )
 
     args = parser.parse_args()
 
@@ -132,6 +138,7 @@ def main() -> None:
                 aspect_mode=args.aspect_mode,
                 allow_large=args.allow_large,
                 fast=args.fast,
+                palette_size=args.palette_size,
             )
             output = convert_to_pixels(source_data, pixel_config)
         else:
@@ -144,6 +151,7 @@ def main() -> None:
                 aspect_mode=args.aspect_mode,
                 allow_large=args.allow_large,
                 fast=args.fast,
+                palette_size=args.palette_size,
             )
             output = convert_to_svg(source_data, pixel_config)
 

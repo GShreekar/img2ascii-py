@@ -110,6 +110,12 @@ Overlay edge boundaries using Sobel filters to construct line art matching visua
 img2ascii path/to/line_art.png --width 100 --edges -o output.txt
 ```
 
+#### 9. Palette Quantization (Color Compression)
+Trade a small amount of color fidelity to yield significantly smaller file sizes with better run-length compression (pixel/SVG modes only):
+```bash
+img2ascii path/to/image.jpg --width 100 --mode pixel --palette-size 16 -o quantized.html
+```
+
 ---
 
 ## Library API Reference
@@ -147,7 +153,8 @@ config = PixelConfig(
     bg_color="#111111",
     glyph="█",             # Character block used to draw each pixel
     aspect_mode="css",     # aspect correction via CSS line-height (keeps raw pixel resolution)
-    fast=True              # Optional: Enable Numba JIT acceleration
+    fast=True,             # Optional: Enable Numba JIT acceleration
+    palette_size=16        # Optional: Quantize to 16 colors for compression
 )
 
 html_code = convert_to_pixels("image.png", config)
@@ -163,7 +170,8 @@ from img2ascii.api import convert_to_svg, PixelConfig
 config = PixelConfig(
     width=120,
     bg_color="#111111",
-    fast=True              # Optional: Enable Numba JIT acceleration
+    fast=True,             # Optional: Enable Numba JIT acceleration
+    palette_size=16        # Optional: Quantize to 16 colors for compression
 )
 
 svg_code = convert_to_svg("image.png", config)

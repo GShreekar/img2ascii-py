@@ -1,7 +1,7 @@
 import numpy as np
 from PIL import Image
 from unittest.mock import patch
-from img2ascii.api import convert_to_ascii, AsciiConfig, convert_to_pixels, PixelConfig
+from img2ascii.api import convert_to_ascii, AsciiConfig, convert_to_pixels, PixelConfig, convert_to_svg
 from img2ascii.exceptions import ImageTooLargeError
 import pytest
 
@@ -93,3 +93,43 @@ def test_convert_to_pixels_aspect_mode_invalid():
     config = PixelConfig(aspect_mode="invalid")
     with pytest.raises(ValueError, match="Invalid aspect_mode"):
         convert_to_pixels(img, config)
+
+
+def test_convert_to_pixels_palette_size():
+    img = Image.new("RGB", (10, 1), color=(0, 0, 0))
+    # Put 10 distinct colors in the image
+    for x in range(10):
+        img.putpixel((x, 0), (x * 20, x * 20, x * 20))
+
+    # Without palette quantization, we should have 10 colors
+    config_no_quant = PixelConfig(width=10)
+    html_no_quant = convert_to_pixels(img, config_no_quant)
+
+    # With palette quantization (e.g. 3 colors)
+    config_quant = PixelConfig(width=10, palette_size=3)
+    html_quant = convert_to_pixels(img, config_quant)
+
+    import re
+
+    classes_no_quant = set(re.findall(r"\.c_[0-9a-fA-F]{6}", html_no_quant))
+    classes_quant = set(re.findall(r"\.c_[0-9a-fA-F]{6}", html_quant))
+
+    assert len(classes_no_quant) == 10
+    assert len(classes_quant) <= 3
+
+    # Also test SVG palette quantization
+    svg_quant = convert_to_svg(img, config_quant)
+    fills_quant = set(re.findall(r'fill="#[0-9a-fA-F]{6}"', svg_quant))
+    assert len(fills_quant) <= 4
+
+
+def test_convert_to_pixels_palette_size_invalid():
+    img = Image.new("RGB", (10, 10), color=(255, 0, 0))
+    with pytest.raises(ValueError, match="palette_size must be between 2 and 256"):
+        convert_to_pixels(img, PixelConfig(palette_size=1))
+    with pytest.raises(ValueError, match="palette_size must be between 2 and 256"):
+        convert_to_pixels(img, PixelConfig(palette_size=300))
+    with pytest.raises(ValueError, match="palette_size must be between 2 and 256"):
+        convert_to_svg(img, PixelConfig(palette_size=1))
+    with pytest.raises(ValueError, match="palette_size must be between 2 and 256"):
+        convert_to_svg(img, PixelConfig(palette_size=300))

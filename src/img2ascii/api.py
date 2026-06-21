@@ -2,6 +2,7 @@ from typing import Optional
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Union
+import numpy as np
 from PIL import Image
 from img2ascii.core.loader import load_image
 from img2ascii.core.aspect import target_grid_size
@@ -73,6 +74,7 @@ class PixelConfig:
     allow_large: bool = False
     fast: bool = False
     max_cells: int = 16_000_000
+    palette_size: Optional[int] = None
 
 
 def convert_to_pixels(
@@ -109,6 +111,18 @@ def convert_to_pixels(
         rgba_prep, luma_prep, target_cols, target_rows, fast=config.fast
     )
 
+    if config.palette_size is not None:
+        if config.palette_size < 2 or config.palette_size > 256:
+            raise ValueError("palette_size must be between 2 and 256.")
+        from PIL import Image
+
+        img_rgb = Image.fromarray(
+            np.clip(rgb_grid, 0.0, 255.0).astype(np.uint8), mode="RGB"
+        )
+        quantized_p = img_rgb.quantize(colors=config.palette_size)
+        quantized_rgb = quantized_p.convert("RGB")
+        rgb_grid = np.array(quantized_rgb, dtype=rgb_grid.dtype)
+
     renderer = PixelExactRenderer(
         config.glyph, config.bg_color, config.aspect_mode, config.char_aspect
     )
@@ -143,6 +157,18 @@ def convert_to_svg(
     rgb_grid, luma_grid, alpha_grid = sample_grid(
         rgba_prep, luma_prep, target_cols, target_rows, fast=config.fast
     )
+
+    if config.palette_size is not None:
+        if config.palette_size < 2 or config.palette_size > 256:
+            raise ValueError("palette_size must be between 2 and 256.")
+        from PIL import Image
+
+        img_rgb = Image.fromarray(
+            np.clip(rgb_grid, 0.0, 255.0).astype(np.uint8), mode="RGB"
+        )
+        quantized_p = img_rgb.quantize(colors=config.palette_size)
+        quantized_rgb = quantized_p.convert("RGB")
+        rgb_grid = np.array(quantized_rgb, dtype=rgb_grid.dtype)
 
     renderer = SvgRenderer(config.bg_color, config.char_aspect)
     return renderer.render(rgb_grid, luma_grid, alpha_grid)
