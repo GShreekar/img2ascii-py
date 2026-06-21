@@ -81,7 +81,10 @@ def main() -> None:
         "--bg-color", default="#000000", help="HTML background color (pixel mode only)."
     )
     parser.add_argument(
-        "--aspect-mode", default="resize", help="HTML aspect mode (pixel mode only)."
+        "--aspect-mode",
+        choices=["resize", "css"],
+        default="resize",
+        help="HTML aspect mode (pixel mode only).",
     )
     parser.add_argument(
         "--allow-large",

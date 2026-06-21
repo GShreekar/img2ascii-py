@@ -14,7 +14,8 @@ Built with performance in mind using fully vectorized NumPy operations, `img2asc
 
 - **Vectorized Core**: Color pre-processing (gamma, brightness, contrast) and block downsampling are fully vectorized using NumPy.
 - **Terminal Truecolor**: Output ASCII art in 24-bit ANSI colors with a state-machine that minimizes escape-sequence overhead.
-- **Pixel-Exact HTML**: Render pixel-art pages utilizing Run-Length Encoding (RLE) to bundle matching color spans and optimize filesize.
+- **Pixel-Exact HTML**: Render pixel-art pages utilizing Run-Length Encoding (RLE) to bundle matching color spans and optimize filesize. Supports both `resize` (pre-sampling aspect scaling) and `css` (visual aspect scaling via line-height to preserve literal source pixel data) modes.
+- **Pixel-Exact SVG Vector Output**: Convert images into scalable, clean SVG vector graphics with RLE-optimized `<rect>` nodes.
 - **Curated Preset Ramps**: Includes preset charsets:
   - `standard`: ` .:-=+*#%@`
   - `detailed`: `$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\|()1{}[]?-_+~<>i! lI;:,"^`'. `
@@ -76,25 +77,37 @@ img2ascii path/to/image.jpg --width 100 --color
 #### 3. Pixel-Exact HTML/CSS Output
 Convert an image to a pixel-perfect HTML webpage using color-grouped HTML spans:
 ```bash
-img2ascii path/to/image.jpg --width 150 --mode pixel > page.html
+img2ascii path/to/image.jpg --width 150 --mode pixel -o page.html
 ```
 
-#### 4. Piping from Standard Input
+#### 4. SVG Vector Graphic Output
+Convert an image to a scalable SVG vector graphic file:
+```bash
+img2ascii path/to/image.jpg --width 120 --mode svg -o graphic.svg
+```
+
+#### 5. CSS Aspect Ratio Mode
+Save a pixel-exact HTML file where visual aspect-ratio correction is done entirely in CSS (preserving literal original pixel coordinates):
+```bash
+img2ascii path/to/image.jpg --width 100 --mode pixel --aspect-mode css -o page.html
+```
+
+#### 6. Piping from Standard Input
 Send binary stream output into the converter:
 ```bash
-cat input.png | img2ascii - --width 60 > output.txt
+cat input.png | img2ascii - --width 60 -o output.txt
 ```
 
-#### 5. JIT-Accelerated Fast Mode
+#### 7. JIT-Accelerated Fast Mode
 Enable performance JIT acceleration using Numba for processing high-resolution files:
 ```bash
-img2ascii path/to/large_image.jpg --width 200 --fast
+img2ascii path/to/large_image.jpg --width 200 --fast -o output.txt
 ```
 
-#### 6. Edge Detection Enhancement
+#### 8. Edge Detection Enhancement
 Overlay edge boundaries using Sobel filters to construct line art matching visual structures:
 ```bash
-img2ascii path/to/line_art.png --width 100 --edges
+img2ascii path/to/line_art.png --width 100 --edges -o output.txt
 ```
 
 ---
@@ -133,13 +146,29 @@ config = PixelConfig(
     width=120,
     bg_color="#111111",
     glyph="█",             # Character block used to draw each pixel
-    aspect_mode="resize",
+    aspect_mode="css",     # aspect correction via CSS line-height (keeps raw pixel resolution)
     fast=True              # Optional: Enable Numba JIT acceleration
 )
 
 html_code = convert_to_pixels("image.png", config)
 with open("output.html", "w") as f:
     f.write(html_code)
+```
+
+### Pixel-Exact Vector Output (SVG)
+
+```python
+from img2ascii.api import convert_to_svg, PixelConfig
+
+config = PixelConfig(
+    width=120,
+    bg_color="#111111",
+    fast=True              # Optional: Enable Numba JIT acceleration
+)
+
+svg_code = convert_to_svg("image.png", config)
+with open("output.svg", "w") as f:
+    f.write(svg_code)
 ```
 
 ---

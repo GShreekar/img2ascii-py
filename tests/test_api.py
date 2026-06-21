@@ -72,3 +72,24 @@ def test_convert_to_pixels_too_large():
         )
         html = convert_to_pixels(img, config_large)
         assert "<html" in html
+
+
+def test_convert_to_pixels_aspect_mode_css():
+    img = Image.new("RGB", (10, 20), color=(255, 0, 0))
+
+    # Under aspect_mode="css", char_aspect is ignored during sampling (treated as 1.0)
+    config = PixelConfig(width=10, aspect_mode="css", char_aspect=2.0)
+    html = convert_to_pixels(img, config)
+    assert "line-height: 0.5;" in html
+
+    # Under aspect_mode="resize", char_aspect=2.0 is used during sampling
+    config_resize = PixelConfig(width=10, aspect_mode="resize", char_aspect=2.0)
+    html_resize = convert_to_pixels(img, config_resize)
+    assert "line-height: 1.0;" in html_resize
+
+
+def test_convert_to_pixels_aspect_mode_invalid():
+    img = Image.new("RGB", (10, 10), color=(255, 0, 0))
+    config = PixelConfig(aspect_mode="invalid")
+    with pytest.raises(ValueError, match="Invalid aspect_mode"):
+        convert_to_pixels(img, config)

@@ -72,3 +72,20 @@ def test_pixel_exact_renderer_transparency():
     assert ".c_00ff00 { color: #00ff00; }" in html
     assert '<span class="c_ff000080">██</span>' in html
     assert '<span class="c_00ff00">██</span>' in html
+
+
+def test_pixel_exact_aspect_mode_css():
+    renderer = PixelExactRenderer(aspect_mode="css", char_aspect=2.0)
+    grid_rgb = np.zeros((2, 2, 3), dtype=np.float32)
+    grid_luma = np.zeros((2, 2), dtype=np.float32)
+    grid_alpha = np.ones((2, 2), dtype=np.float32)
+
+    html = renderer.render(grid_rgb, grid_luma, grid_alpha)
+    assert "line-height: 0.5;" in html
+
+
+def test_pixel_exact_aspect_mode_invalid():
+    import pytest
+
+    with pytest.raises(ValueError):
+        PixelExactRenderer(aspect_mode="invalid")

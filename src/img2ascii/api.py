@@ -89,8 +89,13 @@ def convert_to_pixels(
         config = PixelConfig()
     rgba_arr = load_image(source)
     height, width = rgba_arr.shape[:2]
+    if config.aspect_mode not in ("resize", "css"):
+        raise ValueError(
+            f"Invalid aspect_mode: {config.aspect_mode}. Must be 'resize' or 'css'."
+        )
+    char_aspect_to_use = 1.0 if config.aspect_mode == "css" else config.char_aspect
     target_cols, target_rows = target_grid_size(
-        width, height, config.width, config.height, config.char_aspect
+        width, height, config.width, config.height, char_aspect_to_use
     )
 
     if (target_cols * target_rows) > config.max_cells and not config.allow_large:
@@ -104,7 +109,9 @@ def convert_to_pixels(
         rgba_prep, luma_prep, target_cols, target_rows, fast=config.fast
     )
 
-    renderer = PixelExactRenderer(config.glyph, config.bg_color, config.aspect_mode)
+    renderer = PixelExactRenderer(
+        config.glyph, config.bg_color, config.aspect_mode, config.char_aspect
+    )
     return renderer.render(rgb_grid, luma_grid, alpha_grid)
 
 

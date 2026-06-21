@@ -7,12 +7,21 @@ class PixelExactRenderer(BaseRenderer):
     """Renderer that outputs pixel-exact HTML table with CSS background colors."""
 
     def __init__(
-        self, glyph: str = "█", bg_color: str = "#000000", aspect_mode: str = "resize"
+        self,
+        glyph: str = "█",
+        bg_color: str = "#000000",
+        aspect_mode: str = "resize",
+        char_aspect: float = 2.0,
     ):
         super().__init__()
         self.glyph = glyph
         self.bg_color = bg_color
+        if aspect_mode not in ("resize", "css"):
+            raise ValueError(
+                f"Invalid aspect_mode: {aspect_mode}. Must be 'resize' or 'css'."
+            )
         self.aspect_mode = aspect_mode
+        self.char_aspect = char_aspect
 
     def run_length_encode_row(
         self,
@@ -74,6 +83,7 @@ class PixelExactRenderer(BaseRenderer):
             for color in row_colors:
                 unique_colors.add(color)
 
+        line_height_val = (1.0 / self.char_aspect) if self.aspect_mode == "css" else 1.0
         style_rules = [
             "body {",
             f"    background-color: {self.bg_color};",
@@ -82,7 +92,7 @@ class PixelExactRenderer(BaseRenderer):
             "}",
             "pre {",
             "    font-family: monospace;",
-            "    line-height: 1.0;",
+            f"    line-height: {line_height_val};",
             "    margin: 0;",
             "    white-space: pre;",
             "}",

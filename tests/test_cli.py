@@ -64,6 +64,35 @@ def test_cli_pixel_mode(tmp_path):
         assert "<!DOCTYPE html>" in output
 
 
+def test_cli_pixel_aspect_mode_css(tmp_path):
+    img_path = tmp_path / "test.png"
+    img = Image.new("RGB", (10, 10), color=(255, 255, 255))
+    img.save(img_path)
+
+    with (
+        patch(
+            "sys.argv",
+            [
+                "img2ascii",
+                str(img_path),
+                "--width",
+                "5",
+                "--char-aspect",
+                "2.0",
+                "--mode",
+                "pixel",
+                "--aspect-mode",
+                "css",
+            ],
+        ),
+        patch("sys.stdout", new_callable=io.StringIO) as mock_stdout,
+    ):
+        main()
+        output = mock_stdout.getvalue()
+        assert "<!DOCTYPE html>" in output
+        assert "line-height: 0.5;" in output
+
+
 def test_cli_stdin():
     # Mock reading from stdin buffer
     img_bytes = io.BytesIO()
