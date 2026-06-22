@@ -1,7 +1,13 @@
 import numpy as np
 from PIL import Image
 from unittest.mock import patch
-from img2ascii.api import convert_to_ascii, AsciiConfig, convert_to_pixels, PixelConfig, convert_to_svg
+from img2ascii.api import (
+    convert_to_ascii,
+    AsciiConfig,
+    convert_to_pixels,
+    PixelConfig,
+    convert_to_svg,
+)
 from img2ascii.exceptions import ImageTooLargeError
 import pytest
 

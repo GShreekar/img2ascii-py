@@ -111,3 +111,46 @@ def test_map_luma_to_ascii_transparency():
     # Opaque column 0 maps to "A". Transparent column 1 maps to " "
     assert lines[0] == "A "
     assert lines[1] == "A "
+
+
+def test_edge_strategy_with_transparency():
+    # 3x3 grid with vertical edge in the middle column
+    grid_luma = np.array(
+        [[0.0, 255.0, 0.0], [0.0, 255.0, 0.0], [0.0, 255.0, 0.0]],
+        dtype=np.float32,
+    )
+    # The middle-column edge is transparent (alpha = 0.0)
+    grid_alpha = np.array(
+        [[1.0, 0.0, 1.0], [1.0, 0.0, 1.0], [1.0, 0.0, 1.0]],
+        dtype=np.float32,
+    )
+
+    # Render with EdgeStrategy
+    from img2ascii.renderers.ascii_art import EdgeStrategy
+
+    strategy = EdgeStrategy()
+    char_grid = strategy.map_luma(
+        grid_luma, ramp="ABC", auto_contrast=False, grid_alpha=grid_alpha
+    )
+
+    # Since middle column is transparent, it should be mapped to " " instead of "|"
+    assert char_grid[0][1] == " "
+    assert char_grid[1][1] == " "
+    assert char_grid[2][1] == " "
+
+
+def test_ascii_strategy_abstract_call():
+    from img2ascii.renderers.ascii_art import AsciiStrategy
+
+    class DummyStrategy(AsciiStrategy):
+        def map_luma(
+            self,
+            grid_luma: np.ndarray,
+            ramp: str,
+            auto_contrast: bool = True,
+            grid_alpha: np.ndarray | None = None,
+        ) -> list[list[str]]:
+            return super().map_luma(grid_luma, ramp, auto_contrast, grid_alpha)  # type: ignore[safe-super]
+
+    strategy = DummyStrategy()
+    strategy.map_luma(np.zeros((1, 1)), "A")

@@ -328,3 +328,28 @@ def test_cli_palette_size(tmp_path):
         main()
         output = mock_stdout.getvalue()
         assert "<!DOCTYPE html>" in output
+
+
+def test_cli_edges_missing_scipy(tmp_path):
+    img_path = tmp_path / "test.png"
+    img = Image.new("RGB", (10, 10), color=(255, 255, 255))
+    img.save(img_path)
+
+    with (
+        patch(
+            "sys.argv",
+            [
+                "img2ascii",
+                str(img_path),
+                "--width",
+                "5",
+                "--edges",
+            ],
+        ),
+        patch("img2ascii.renderers.ascii_art.HAS_SCIPY", False),
+        patch("sys.stderr", new_callable=io.StringIO) as mock_stderr,
+        pytest.raises(SystemExit) as excinfo,
+    ):
+        main()
+    assert excinfo.value.code == 1
+    assert "Optional dependency 'scipy' is required" in mock_stderr.getvalue()

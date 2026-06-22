@@ -1,6 +1,9 @@
 import numpy as np
+from typing import Union, Tuple, Dict, Set, Sequence, cast
 from img2ascii.renderers.base import BaseRenderer
 from img2ascii.color import rgb_to_hex
+
+ColorTuple = Union[Tuple[int, int, int], Tuple[int, int, int, float]]
 
 
 class PixelExactRenderer(BaseRenderer):
@@ -25,9 +28,9 @@ class PixelExactRenderer(BaseRenderer):
 
     def run_length_encode_row(
         self,
-        colors: list[tuple[int, int, int] | tuple[int, int, int, float]],
-        glyphs: list[str],
-    ) -> list[tuple[tuple[int, int, int] | tuple[int, int, int, float], str, int]]:
+        colors: Sequence[ColorTuple],
+        glyphs: Sequence[str],
+    ) -> list[tuple[ColorTuple, str, int]]:
         """Run-length encode a single row of colors and glyphs.
         Args:
             colors: list of RGB or RGBA tuples
@@ -64,11 +67,11 @@ class PixelExactRenderer(BaseRenderer):
             str: HTML table string with pixel-exact colors
         """
         row_count, col_count = grid_rgb.shape[:2]
-        unique_colors = set()
+        unique_colors: Set[ColorTuple] = set()
         encoded_runs = []
 
         for r in range(row_count):
-            row_colors = [
+            row_colors: list[ColorTuple] = [
                 (
                     int(grid_rgb[r, c, 0]),
                     int(grid_rgb[r, c, 1]),
@@ -98,9 +101,10 @@ class PixelExactRenderer(BaseRenderer):
             "}",
         ]
 
-        rgb2css = {}
+        rgb2css: Dict[ColorTuple, str] = {}
         for color in sorted(unique_colors):
-            r, g, b, a = color
+            r, g, b, a = cast(Tuple[int, int, int, float], color)
+
             if a >= 0.999:
                 rgb_hex = rgb_to_hex(r, g, b)
                 class_name = f"c_{rgb_hex[1:]}"
