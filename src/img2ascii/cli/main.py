@@ -7,6 +7,8 @@ from img2ascii.api import (
     convert_to_pixels,
     PixelConfig,
     convert_to_svg,
+    convert_to_html,
+    HtmlConfig,
 )
 from img2ascii.exceptions import Img2AsciiError
 from img2ascii.charsets import CHARSETS
@@ -57,9 +59,9 @@ def main() -> None:
     )
     parser.add_argument(
         "--mode",
-        choices=["ascii", "pixel", "svg"],
+        choices=["ascii", "pixel", "svg", "html"],
         default="ascii",
-        help="Rendering mode: 'ascii' (default), 'pixel' (HTML), or 'svg' (SVG).",
+        help="Rendering mode: 'ascii' (default), 'pixel' (pixel-exact HTML), 'svg' (SVG), or 'html' (HTML ASCII).",
     )
     parser.add_argument(
         "--fast",
@@ -78,24 +80,26 @@ def main() -> None:
         help="Glyph used for pixel representation (pixel mode only).",
     )
     parser.add_argument(
-        "--bg-color", default="#000000", help="HTML background color (pixel mode only)."
+        "--bg-color",
+        default="#000000",
+        help="HTML background color (pixel/html modes only).",
     )
     parser.add_argument(
         "--aspect-mode",
         choices=["resize", "css"],
         default="resize",
-        help="HTML aspect mode (pixel mode only).",
+        help="HTML aspect mode (pixel/html modes only).",
     )
     parser.add_argument(
         "--allow-large",
         action="store_true",
-        help="Allow processing very large grids in pixel mode.",
+        help="Allow processing very large grids in pixel/html modes.",
     )
     parser.add_argument(
         "--palette-size",
         type=int,
         default=None,
-        help="Number of colors to quantize the image to (pixel/SVG modes only). Must be between 2 and 256.",
+        help="Number of colors to quantize the image to (pixel/SVG/html modes only). Must be between 2 and 256.",
     )
 
     args = parser.parse_args()
@@ -141,7 +145,7 @@ def main() -> None:
                 palette_size=args.palette_size,
             )
             output = convert_to_pixels(source_data, pixel_config)
-        else:
+        elif args.mode == "svg":
             pixel_config = PixelConfig(
                 width=args.width,
                 height=args.height,
@@ -154,6 +158,22 @@ def main() -> None:
                 palette_size=args.palette_size,
             )
             output = convert_to_svg(source_data, pixel_config)
+        elif args.mode == "html":
+            html_config = HtmlConfig(
+                width=args.width,
+                height=args.height,
+                char_aspect=args.char_aspect,
+                charset=args.charset,
+                auto_contrast=not args.no_contrast,
+                invert=args.invert,
+                bg_color=args.bg_color,
+                aspect_mode=args.aspect_mode,
+                allow_large=args.allow_large,
+                fast=args.fast,
+                edges=args.edges,
+                palette_size=args.palette_size,
+            )
+            output = convert_to_html(source_data, html_config)
 
         if args.output:
             with open(args.output, "w", encoding="utf-8") as f:

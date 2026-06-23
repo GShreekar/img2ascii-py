@@ -353,3 +353,63 @@ def test_cli_edges_missing_scipy(tmp_path):
         main()
     assert excinfo.value.code == 1
     assert "Optional dependency 'scipy' is required" in mock_stderr.getvalue()
+
+
+def test_cli_html_mode(tmp_path):
+    img_path = tmp_path / "test.png"
+    img = Image.new("RGB", (10, 10), color=(255, 255, 255))
+    img.save(img_path)
+
+    with (
+        patch(
+            "sys.argv",
+            [
+                "img2ascii",
+                str(img_path),
+                "--width",
+                "5",
+                "--char-aspect",
+                "1.0",
+                "--mode",
+                "html",
+            ],
+        ),
+        patch("sys.stdout", new_callable=io.StringIO) as mock_stdout,
+    ):
+        main()
+        output = mock_stdout.getvalue()
+        assert "<!DOCTYPE html>" in output
+        assert "@@@@@" in output  # maps to standard ramp @ for white
+
+
+def test_cli_html_mode_options(tmp_path):
+    img_path = tmp_path / "test.png"
+    img = Image.new("RGB", (10, 10), color=(255, 255, 255))
+    img.save(img_path)
+
+    with (
+        patch(
+            "sys.argv",
+            [
+                "img2ascii",
+                str(img_path),
+                "--width",
+                "5",
+                "--mode",
+                "html",
+                "--bg-color",
+                "#123456",
+                "--aspect-mode",
+                "css",
+                "--fast",
+                "--edges",
+                "--palette-size",
+                "16",
+            ],
+        ),
+        patch("sys.stdout", new_callable=io.StringIO) as mock_stdout,
+    ):
+        main()
+        output = mock_stdout.getvalue()
+        assert "<!DOCTYPE html>" in output
+        assert "background-color: #123456;" in output

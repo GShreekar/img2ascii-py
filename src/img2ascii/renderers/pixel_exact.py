@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Union, Tuple, Dict, Set, Sequence, cast
+from typing import Union, Tuple, Dict, Set, Sequence, Optional, cast
 from img2ascii.renderers.base import BaseRenderer
 from img2ascii.color import rgb_to_hex
 
@@ -56,13 +56,18 @@ class PixelExactRenderer(BaseRenderer):
         return runs
 
     def render(
-        self, grid_rgb: np.ndarray, grid_luma: np.ndarray, grid_alpha: np.ndarray
+        self,
+        grid_rgb: np.ndarray,
+        grid_luma: np.ndarray,
+        grid_alpha: np.ndarray,
+        glyphs: Optional[Sequence[Sequence[str]]] = None,
     ) -> str:
         """Render the grid as an HTML table.
         Args:
             grid_rgb: (row, col, 3) array of RGB values
             grid_luma: (row, col) array of luma values (ignored)
             grid_alpha: (row, col) array of alpha values
+            glyphs: Optional custom 2D grid of glyph characters to render
         Returns:
             str: HTML table string with pixel-exact colors
         """
@@ -80,7 +85,10 @@ class PixelExactRenderer(BaseRenderer):
                 )
                 for c in range(col_count)
             ]
-            row_glyphs = [self.glyph] * col_count
+            if glyphs is not None:
+                row_glyphs = glyphs[r]
+            else:
+                row_glyphs = [self.glyph] * col_count
             runs = self.run_length_encode_row(row_colors, row_glyphs)
             encoded_runs.append(runs)
             for color in row_colors:

@@ -172,3 +172,81 @@ def convert_to_svg(
 
     renderer = SvgRenderer(config.bg_color, config.char_aspect)
     return renderer.render(rgb_grid, luma_grid, alpha_grid)
+
+
+@dataclass
+class HtmlConfig:
+    width: Optional[int] = None
+    height: Optional[int] = None
+    char_aspect: float = 2.0
+    charset: str = "standard"
+    auto_contrast: bool = True
+    invert: bool = False
+    bg_color: str = "#000000"
+    aspect_mode: str = "resize"
+    allow_large: bool = False
+    fast: bool = False
+    edges: bool = False
+    max_cells: int = 16_000_000
+    palette_size: Optional[int] = None
+
+
+def convert_to_html(
+    source: Union[Path, str, bytes, Image.Image], config: Optional[HtmlConfig] = None
+) -> str:
+    """Convert an image to HTML with styled ASCII art glyphs.
+    Args:
+        source: Path to the image file or bytes.
+        config: Configuration for the HTML rendering.
+    Returns:
+        String containing the HTML document.
+    """
+    if config is None:
+        config = HtmlConfig()
+    rgba_arr = load_image(source)
+    height, width = rgba_arr.shape[:2]
+    if config.aspect_mode not in ("resize", "css"):
+        raise ValueError(
+            f"Invalid aspect_mode: {config.aspect_mode}. Must be 'resize' or 'css'."
+        )
+    char_aspect_to_use = 1.0 if config.aspect_mode == "css" else config.char_aspect
+    target_cols, target_rows = target_grid_size(
+        width, height, config.width, config.height, char_aspect_to_use
+    )
+
+    if (target_cols * target_rows) > config.max_cells and not config.allow_large:
+        raise ImageTooLargeError(
+            f"Grid size {target_cols}x{target_rows} ({target_cols * target_rows} cells) exceeds safety limit of {config.max_cells} cells. "
+            f"Use --width/--height or scale down, or bypass with --allow-large."
+        )
+
+    rgba_prep, luma_prep = preprocess_image(rgba_arr)
+    rgb_grid, luma_grid, alpha_grid = sample_grid(
+        rgba_prep, luma_prep, target_cols, target_rows, fast=config.fast
+    )
+
+    if config.palette_size is not None:
+        if config.palette_size < 2 or config.palette_size > 256:
+            raise ValueError("palette_size must be between 2 and 256.")
+        from PIL import Image
+
+        img_rgb = Image.fromarray(
+            np.clip(rgb_grid, 0.0, 255.0).astype(np.uint8), mode="RGB"
+        )
+        quantized_p = img_rgb.quantize(colors=config.palette_size)
+        quantized_rgb = quantized_p.convert("RGB")
+        rgb_grid = np.array(quantized_rgb, dtype=rgb_grid.dtype)
+
+    charset_ramp = get_charset_ramp(config.charset, invert=config.invert)
+    ascii_renderer = AsciiArtRenderer(
+        charset_ramp, config.auto_contrast, use_edges=config.edges
+    )
+    plain_ascii = ascii_renderer.render(rgb_grid, luma_grid, alpha_grid)
+    char_grid = [list(line) for line in plain_ascii.splitlines()]
+
+    pixel_renderer = PixelExactRenderer(
+        bg_color=config.bg_color,
+        aspect_mode=config.aspect_mode,
+        char_aspect=config.char_aspect,
+    )
+    return pixel_renderer.render(rgb_grid, luma_grid, alpha_grid, glyphs=char_grid)

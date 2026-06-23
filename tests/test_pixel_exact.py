@@ -89,3 +89,24 @@ def test_pixel_exact_aspect_mode_invalid():
 
     with pytest.raises(ValueError):
         PixelExactRenderer(aspect_mode="invalid")
+
+
+def test_pixel_exact_renderer_custom_glyphs():
+    renderer = PixelExactRenderer(bg_color="#111111")
+    grid_rgb = np.zeros((2, 2, 3), dtype=np.float32)
+    grid_rgb[0, 0] = [255, 0, 0]
+    grid_rgb[0, 1] = [255, 0, 0]
+    grid_rgb[1, 0] = [0, 255, 0]
+    grid_rgb[1, 1] = [0, 255, 0]
+
+    grid_luma = np.zeros((2, 2), dtype=np.float32)
+    grid_alpha = np.ones((2, 2), dtype=np.float32)
+
+    custom_glyphs = [["A", "B"], ["C", "D"]]
+    html = renderer.render(grid_rgb, grid_luma, grid_alpha, glyphs=custom_glyphs)
+
+    assert "<!DOCTYPE html>" in html
+    assert '<span class="c_ff0000">A</span>' in html
+    assert '<span class="c_ff0000">B</span>' in html
+    assert '<span class="c_00ff00">C</span>' in html
+    assert '<span class="c_00ff00">D</span>' in html

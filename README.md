@@ -116,6 +116,12 @@ Trade a small amount of color fidelity to yield significantly smaller file sizes
 img2ascii path/to/image.jpg --width 100 --mode pixel --palette-size 16 -o quantized.html
 ```
 
+#### 10. HTML Export of ASCII Art
+Generate a colored, fully-styled HTML webpage that uses custom mapped ASCII glyphs:
+```bash
+img2ascii path/to/image.jpg --width 100 --mode html -o ascii_art.html
+```
+
 ---
 
 ## Library API Reference
@@ -177,6 +183,26 @@ config = PixelConfig(
 svg_code = convert_to_svg("image.png", config)
 with open("output.svg", "w") as f:
     f.write(svg_code)
+```
+
+### HTML Export of ASCII Art (HTML ASCII)
+
+```python
+from img2ascii.api import convert_to_html, HtmlConfig
+
+config = HtmlConfig(
+    width=120,
+    charset="standard",
+    bg_color="#111111",
+    aspect_mode="resize",  # resize or css
+    fast=True,             # Optional: Enable Numba JIT acceleration
+    edges=True,            # Optional: Enable SciPy Sobel edge-enhancement
+    palette_size=16        # Optional: Quantize to 16 colors for compression
+)
+
+html_code = convert_to_html("image.png", config)
+with open("output.html", "w") as f:
+    f.write(html_code)
 ```
 
 ---

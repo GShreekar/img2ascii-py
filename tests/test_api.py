@@ -7,6 +7,8 @@ from img2ascii.api import (
     convert_to_pixels,
     PixelConfig,
     convert_to_svg,
+    convert_to_html,
+    HtmlConfig,
 )
 from img2ascii.exceptions import ImageTooLargeError
 import pytest
@@ -139,3 +141,98 @@ def test_convert_to_pixels_palette_size_invalid():
         convert_to_svg(img, PixelConfig(palette_size=1))
     with pytest.raises(ValueError, match="palette_size must be between 2 and 256"):
         convert_to_svg(img, PixelConfig(palette_size=300))
+
+
+def test_convert_to_html_basic():
+    # Test convert_to_html with default config
+    img = Image.new("RGB", (10, 10), color=(255, 255, 255))
+    html = convert_to_html(img)
+
+    assert "<!DOCTYPE html>" in html
+    assert ".c_ffffff" in html
+    assert "@@@@" in html  # white/full luma maps to "@" in standard ramp
+
+
+def test_convert_to_html_custom_config():
+    img = Image.new("RGB", (10, 10), color=(128, 128, 128))
+    config = HtmlConfig(
+        width=5,
+        char_aspect=1.5,
+        charset="standard",
+        invert=True,
+        bg_color="#ffffff",
+        aspect_mode="resize",
+        fast=False,
+        edges=False,
+    )
+    html = convert_to_html(img, config)
+    assert "<!DOCTYPE html>" in html
+    assert "background-color: #ffffff" in html
+
+
+def test_convert_to_html_aspect_mode_css():
+    img = Image.new("RGB", (10, 20), color=(255, 0, 0))
+
+    # Under aspect_mode="css", char_aspect is ignored during sampling (treated as 1.0)
+    config = HtmlConfig(width=10, aspect_mode="css", char_aspect=2.0)
+    html = convert_to_html(img, config)
+    assert "line-height: 0.5;" in html
+
+    # Under aspect_mode="resize", char_aspect=2.0 is used during sampling
+    config_resize = HtmlConfig(width=10, aspect_mode="resize", char_aspect=2.0)
+    html_resize = convert_to_html(img, config_resize)
+    assert "line-height: 1.0;" in html_resize
+
+
+def test_convert_to_html_aspect_mode_invalid():
+    img = Image.new("RGB", (10, 10), color=(255, 0, 0))
+    config = HtmlConfig(aspect_mode="invalid")
+    with pytest.raises(ValueError, match="Invalid aspect_mode"):
+        convert_to_html(img, config)
+
+
+def test_convert_to_html_too_large():
+    img = Image.new("RGB", (1000, 1000), color=(0, 0, 0))
+    config = HtmlConfig(width=5000, height=5000)
+    with pytest.raises(ImageTooLargeError):
+        convert_to_html(img, config)
+
+    # Check that allow_large overrides the limit and bypasses the check
+    config_large = HtmlConfig(width=5000, height=5000, allow_large=True)
+    with patch("img2ascii.api.sample_grid") as mock_sample:
+        mock_sample.return_value = (
+            np.zeros((2, 2, 3)),
+            np.zeros((2, 2)),
+            np.ones((2, 2)),
+        )
+        html = convert_to_html(img, config_large)
+        assert "<html" in html
+
+
+def test_convert_to_html_palette_size():
+    img = Image.new("RGB", (10, 1), color=(0, 0, 0))
+    # Put 10 distinct colors in the image
+    for x in range(10):
+        img.putpixel((x, 0), (x * 20, x * 20, x * 20))
+
+    # Without palette quantization, we should have 10 colors
+    html_no_quant = convert_to_html(img, HtmlConfig(width=10))
+
+    # With palette quantization (e.g. 3 colors)
+    html_quant = convert_to_html(img, HtmlConfig(width=10, palette_size=3))
+
+    import re
+
+    classes_no_quant = set(re.findall(r"\.c_[0-9a-fA-F]{6}", html_no_quant))
+    classes_quant = set(re.findall(r"\.c_[0-9a-fA-F]{6}", html_quant))
+
+    assert len(classes_no_quant) == 10
+    assert len(classes_quant) <= 3
+
+
+def test_convert_to_html_palette_size_invalid():
+    img = Image.new("RGB", (10, 10), color=(255, 0, 0))
+    with pytest.raises(ValueError, match="palette_size must be between 2 and 256"):
+        convert_to_html(img, HtmlConfig(palette_size=1))
+    with pytest.raises(ValueError, match="palette_size must be between 2 and 256"):
+        convert_to_html(img, HtmlConfig(palette_size=300))
