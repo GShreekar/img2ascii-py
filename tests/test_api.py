@@ -236,3 +236,27 @@ def test_convert_to_html_palette_size_invalid():
         convert_to_html(img, HtmlConfig(palette_size=1))
     with pytest.raises(ValueError, match="palette_size must be between 2 and 256"):
         convert_to_html(img, HtmlConfig(palette_size=300))
+
+
+def test_luma_method_selection():
+    img = Image.new("RGB", (10, 10), color=(0, 255, 0))
+    config_601 = AsciiConfig(width=5, charset="standard", luma_method="bt601")
+    config_709 = AsciiConfig(width=5, charset="standard", luma_method="bt709")
+
+    res_601 = convert_to_ascii(img, config_601)
+    res_709 = convert_to_ascii(img, config_709)
+
+    assert len(res_601) > 0
+    assert len(res_709) > 0
+
+    with pytest.raises(ValueError, match="Invalid luma_method"):
+        convert_to_ascii(img, AsciiConfig(luma_method="invalid"))
+
+    with pytest.raises(ValueError, match="Invalid luma_method"):
+        convert_to_pixels(img, PixelConfig(luma_method="invalid"))
+
+    with pytest.raises(ValueError, match="Invalid luma_method"):
+        convert_to_svg(img, PixelConfig(luma_method="invalid"))
+
+    with pytest.raises(ValueError, match="Invalid luma_method"):
+        convert_to_html(img, HtmlConfig(luma_method="invalid"))

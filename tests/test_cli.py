@@ -413,3 +413,48 @@ def test_cli_html_mode_options(tmp_path):
         output = mock_stdout.getvalue()
         assert "<!DOCTYPE html>" in output
         assert "background-color: #123456;" in output
+
+
+def test_cli_luma_method(tmp_path):
+    img_path = tmp_path / "test.png"
+    img = Image.new("RGB", (10, 10), color=(0, 255, 0))
+    img.save(img_path)
+
+    # Test bt709
+    with (
+        patch(
+            "sys.argv",
+            [
+                "img2ascii",
+                str(img_path),
+                "--width",
+                "5",
+                "--luma-method",
+                "bt709",
+            ],
+        ),
+        patch("sys.stdout", new_callable=io.StringIO) as mock_stdout,
+    ):
+        main()
+        output = mock_stdout.getvalue()
+        assert len(output) > 0
+
+    # Test invalid luma method (handled by argparse's choice list)
+    with (
+        patch(
+            "sys.argv",
+            [
+                "img2ascii",
+                str(img_path),
+                "--width",
+                "5",
+                "--luma-method",
+                "invalid",
+            ],
+        ),
+        patch("sys.stderr", new_callable=io.StringIO) as mock_stderr,
+        pytest.raises(SystemExit) as excinfo,
+    ):
+        main()
+    assert excinfo.value.code != 0
+    assert "invalid choice" in mock_stderr.getvalue()

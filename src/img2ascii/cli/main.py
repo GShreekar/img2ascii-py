@@ -101,6 +101,12 @@ def main() -> None:
         default=None,
         help="Number of colors to quantize the image to (pixel/SVG/html modes only). Must be between 2 and 256.",
     )
+    parser.add_argument(
+        "--luma-method",
+        choices=["bt601", "bt709"],
+        default="bt601",
+        help="Luma conversion weighting method: 'bt601' (default SD weights) or 'bt709' (HD weights).",
+    )
 
     args = parser.parse_args()
 
@@ -130,6 +136,7 @@ def main() -> None:
                 invert=args.invert,
                 fast=args.fast,
                 edges=args.edges,
+                luma_method=args.luma_method,
             )
             output = convert_to_ascii(source_data, ascii_config)
         elif args.mode == "pixel":
@@ -143,6 +150,7 @@ def main() -> None:
                 allow_large=args.allow_large,
                 fast=args.fast,
                 palette_size=args.palette_size,
+                luma_method=args.luma_method,
             )
             output = convert_to_pixels(source_data, pixel_config)
         elif args.mode == "svg":
@@ -156,6 +164,7 @@ def main() -> None:
                 allow_large=args.allow_large,
                 fast=args.fast,
                 palette_size=args.palette_size,
+                luma_method=args.luma_method,
             )
             output = convert_to_svg(source_data, pixel_config)
         elif args.mode == "html":
@@ -172,6 +181,7 @@ def main() -> None:
                 fast=args.fast,
                 edges=args.edges,
                 palette_size=args.palette_size,
+                luma_method=args.luma_method,
             )
             output = convert_to_html(source_data, html_config)
 

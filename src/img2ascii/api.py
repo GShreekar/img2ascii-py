@@ -28,6 +28,18 @@ class AsciiConfig:
     invert: bool = False
     fast: bool = False
     edges: bool = False
+    luma_method: str = "bt601"
+
+
+def _get_luma_weights(luma_method: str) -> tuple[float, float, float]:
+    if luma_method == "bt601":
+        return (0.299, 0.587, 0.114)
+    elif luma_method == "bt709":
+        return (0.2126, 0.7152, 0.0722)
+    else:
+        raise ValueError(
+            f"Invalid luma_method: {luma_method}. Must be 'bt601' or 'bt709'."
+        )
 
 
 def convert_to_ascii(
@@ -48,7 +60,8 @@ def convert_to_ascii(
         width, height, config.width, config.height, config.char_aspect
     )
 
-    rgba_prep, luma_prep = preprocess_image(rgba_arr)
+    weights = _get_luma_weights(config.luma_method)
+    rgba_prep, luma_prep = preprocess_image(rgba_arr, luma_weights=weights)
 
     rgb_grid, luma_grid, alpha_grid = sample_grid(
         rgba_prep, luma_prep, target_cols, target_rows, fast=config.fast
@@ -75,6 +88,7 @@ class PixelConfig:
     fast: bool = False
     max_cells: int = 16_000_000
     palette_size: Optional[int] = None
+    luma_method: str = "bt601"
 
 
 def convert_to_pixels(
@@ -106,7 +120,8 @@ def convert_to_pixels(
             f"Use --width/--height or scale down, or bypass with --allow-large."
         )
 
-    rgba_prep, luma_prep = preprocess_image(rgba_arr)
+    weights = _get_luma_weights(config.luma_method)
+    rgba_prep, luma_prep = preprocess_image(rgba_arr, luma_weights=weights)
     rgb_grid, luma_grid, alpha_grid = sample_grid(
         rgba_prep, luma_prep, target_cols, target_rows, fast=config.fast
     )
@@ -153,7 +168,8 @@ def convert_to_svg(
             f"Use --width/--height or scale down, or bypass with --allow-large."
         )
 
-    rgba_prep, luma_prep = preprocess_image(rgba_arr)
+    weights = _get_luma_weights(config.luma_method)
+    rgba_prep, luma_prep = preprocess_image(rgba_arr, luma_weights=weights)
     rgb_grid, luma_grid, alpha_grid = sample_grid(
         rgba_prep, luma_prep, target_cols, target_rows, fast=config.fast
     )
@@ -189,6 +205,7 @@ class HtmlConfig:
     edges: bool = False
     max_cells: int = 16_000_000
     palette_size: Optional[int] = None
+    luma_method: str = "bt601"
 
 
 def convert_to_html(
@@ -220,7 +237,8 @@ def convert_to_html(
             f"Use --width/--height or scale down, or bypass with --allow-large."
         )
 
-    rgba_prep, luma_prep = preprocess_image(rgba_arr)
+    weights = _get_luma_weights(config.luma_method)
+    rgba_prep, luma_prep = preprocess_image(rgba_arr, luma_weights=weights)
     rgb_grid, luma_grid, alpha_grid = sample_grid(
         rgba_prep, luma_prep, target_cols, target_rows, fast=config.fast
     )

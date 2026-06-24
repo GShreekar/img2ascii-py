@@ -25,6 +25,8 @@ Built with performance in mind using fully vectorized NumPy operations, `img2asc
   - Custom: Pass any string directly as your ramp!
 - **Smart Image Handling**: Automatically transposes images based on EXIF rotation tags and handles transparent PNG alpha channels gracefully.
 - **Full Stream Piping**: Pipe binary image streams directly into the CLI via `stdin`.
+- **Luma Weighting Options**: Choose between BT.601 (SD) and BT.709 (HD) perceptual brightness weights for luma mapping.
+
 
 ---
 
@@ -122,6 +124,12 @@ Generate a colored, fully-styled HTML webpage that uses custom mapped ASCII glyp
 img2ascii path/to/image.jpg --width 100 --mode html -o ascii_art.html
 ```
 
+#### 11. Perceptual Luma Weighting (BT.709)
+Use the HD-video-standard (BT.709) luma coefficients for conversion:
+```bash
+img2ascii path/to/image.jpg --width 80 --luma-method bt709
+```
+
 ---
 
 ## Library API Reference
@@ -141,8 +149,10 @@ config = AsciiConfig(
     color=True,            # Enable ANSI color escape codes
     auto_contrast=True,    # Stretch luma values for maximum dynamic range
     fast=True,             # Optional: Enable Numba JIT acceleration
-    edges=True             # Optional: Enable SciPy Sobel edge-enhancement
+    edges=True,            # Optional: Enable SciPy Sobel edge-enhancement
+    luma_method="bt709"    # Optional: "bt601" or "bt709" luma weighting
 )
+
 
 # Render from file path, raw bytes, or a PIL Image object
 art = convert_to_ascii("image.jpg", config)
