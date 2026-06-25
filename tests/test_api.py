@@ -260,3 +260,37 @@ def test_luma_method_selection():
 
     with pytest.raises(ValueError, match="Invalid luma_method"):
         convert_to_html(img, HtmlConfig(luma_method="invalid"))
+
+
+def test_dithering_ascii():
+    img = Image.new("RGB", (20, 20))
+    for x in range(20):
+        for y in range(20):
+            val = int((x / 19) * 255)
+            img.putpixel((x, y), (val, val, val))
+
+    config_no_dither = AsciiConfig(width=20, charset="standard", dither=False)
+    config_dither = AsciiConfig(width=20, charset="standard", dither=True)
+
+    ascii_no_dither = convert_to_ascii(img, config_no_dither)
+    ascii_dither = convert_to_ascii(img, config_dither)
+
+    assert ascii_no_dither != ascii_dither
+    assert len(ascii_dither) > 0
+
+
+def test_dithering_html():
+    img = Image.new("RGB", (20, 20))
+    for x in range(20):
+        for y in range(20):
+            val = int((x / 19) * 255)
+            img.putpixel((x, y), (val, val, val))
+
+    config_no_dither = HtmlConfig(width=20, charset="standard", dither=False)
+    config_dither = HtmlConfig(width=20, charset="standard", dither=True)
+
+    html_no_dither = convert_to_html(img, config_no_dither)
+    html_dither = convert_to_html(img, config_dither)
+
+    assert html_no_dither != html_dither
+    assert len(html_dither) > 0

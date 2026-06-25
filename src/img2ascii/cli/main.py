@@ -182,6 +182,7 @@ def main() -> None:
                 edges=args.edges,
                 palette_size=args.palette_size,
                 luma_method=args.luma_method,
+                dither=args.dither,
             )
             output = convert_to_html(source_data, html_config)
 

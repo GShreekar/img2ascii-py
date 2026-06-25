@@ -69,7 +69,10 @@ def convert_to_ascii(
 
     charset_ramp = get_charset_ramp(config.charset, invert=config.invert)
     renderer = AsciiArtRenderer(
-        charset_ramp, config.auto_contrast, use_edges=config.edges
+        charset_ramp,
+        config.auto_contrast,
+        use_edges=config.edges,
+        dither=config.dither,
     )
     plain_ascii = renderer.render(rgb_grid, luma_grid, alpha_grid)
     char_grid = [list(line) for line in plain_ascii.splitlines()]
@@ -206,6 +209,7 @@ class HtmlConfig:
     max_cells: int = 16_000_000
     palette_size: Optional[int] = None
     luma_method: str = "bt601"
+    dither: bool = False
 
 
 def convert_to_html(
@@ -257,7 +261,10 @@ def convert_to_html(
 
     charset_ramp = get_charset_ramp(config.charset, invert=config.invert)
     ascii_renderer = AsciiArtRenderer(
-        charset_ramp, config.auto_contrast, use_edges=config.edges
+        charset_ramp,
+        config.auto_contrast,
+        use_edges=config.edges,
+        dither=config.dither,
     )
     plain_ascii = ascii_renderer.render(rgb_grid, luma_grid, alpha_grid)
     char_grid = [list(line) for line in plain_ascii.splitlines()]

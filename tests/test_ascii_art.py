@@ -149,8 +149,33 @@ def test_ascii_strategy_abstract_call():
             ramp: str,
             auto_contrast: bool = True,
             grid_alpha: np.ndarray | None = None,
+            dither: bool = False,
         ) -> list[list[str]]:
-            return super().map_luma(grid_luma, ramp, auto_contrast, grid_alpha)  # type: ignore[safe-super]
+            return super().map_luma(grid_luma, ramp, auto_contrast, grid_alpha, dither)  # type: ignore[safe-super]
 
     strategy = DummyStrategy()
     strategy.map_luma(np.zeros((1, 1)), "A")
+
+
+def test_dither_luma_2d_raw_python():
+    from img2ascii.renderers.ascii_art import _dither_luma_2d
+
+    arr = np.zeros((3, 3), dtype=np.float32)
+    arr[0, 0] = -50.0
+    arr[0, 1] = 300.0
+    res = _dither_luma_2d(arr, ramp_len=10)
+    assert res.shape == (3, 3)
+
+
+def test_dither_luma_no_numba():
+    import importlib
+    import sys
+    from unittest.mock import patch
+
+    with patch.dict(sys.modules, {"numba": None}):
+        import img2ascii.renderers.ascii_art
+
+        importlib.reload(img2ascii.renderers.ascii_art)
+        assert img2ascii.renderers.ascii_art.HAS_NUMBA is False
+
+    importlib.reload(img2ascii.renderers.ascii_art)

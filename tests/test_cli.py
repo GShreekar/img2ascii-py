@@ -458,3 +458,47 @@ def test_cli_luma_method(tmp_path):
         main()
     assert excinfo.value.code != 0
     assert "invalid choice" in mock_stderr.getvalue()
+
+
+def test_cli_dither(tmp_path):
+    img_path = tmp_path / "test.png"
+    img = Image.new("RGB", (20, 20))
+    for x in range(20):
+        for y in range(20):
+            val = int((x / 19) * 255)
+            img.putpixel((x, y), (val, val, val))
+    img.save(img_path)
+
+    # Test dither flag in ASCII mode
+    with (
+        patch(
+            "sys.argv",
+            [
+                "img2ascii",
+                str(img_path),
+                "--width",
+                "20",
+                "--dither",
+            ],
+        ),
+        patch("sys.stdout", new_callable=io.StringIO) as mock_stdout,
+    ):
+        main()
+        output_dither = mock_stdout.getvalue()
+
+    with (
+        patch(
+            "sys.argv",
+            [
+                "img2ascii",
+                str(img_path),
+                "--width",
+                "20",
+            ],
+        ),
+        patch("sys.stdout", new_callable=io.StringIO) as mock_stdout,
+    ):
+        main()
+        output_no_dither = mock_stdout.getvalue()
+
+    assert output_dither != output_no_dither

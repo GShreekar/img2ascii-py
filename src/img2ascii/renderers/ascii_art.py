@@ -9,6 +9,48 @@ try:
 except ImportError:
     HAS_SCIPY = False
 
+try:
+    from numba import jit  # type: ignore[import-untyped]
+
+    HAS_NUMBA = True
+except ImportError:
+    HAS_NUMBA = False
+
+
+def _dither_luma_2d(norm_luma: np.ndarray, ramp_len: int) -> np.ndarray:
+    rows, cols = norm_luma.shape
+    dithered = norm_luma.copy().astype(np.float32)
+    max_idx = ramp_len - 1
+    factor = 255.0 / max_idx
+
+    for r in range(rows):
+        for c in range(cols):
+            old_val = dithered[r, c]
+            idx = int(round(old_val / factor))
+            if idx < 0:
+                idx = 0
+            elif idx > max_idx:
+                idx = max_idx
+            new_val = idx * factor
+            dithered[r, c] = new_val
+            err = old_val - new_val
+
+            if c + 1 < cols:
+                dithered[r, c + 1] += err * (7.0 / 16.0)
+            if r + 1 < rows:
+                if c - 1 >= 0:
+                    dithered[r + 1, c - 1] += err * (3.0 / 16.0)
+                dithered[r + 1, c] += err * (5.0 / 16.0)
+                if c + 1 < cols:
+                    dithered[r + 1, c + 1] += err * (1.0 / 16.0)
+    return dithered
+
+
+if HAS_NUMBA:
+    _dither_luma_2d_jit = jit(nopython=True, cache=True)(_dither_luma_2d)
+else:
+    _dither_luma_2d_jit = _dither_luma_2d
+
 
 class AsciiStrategy(ABC):
     """Abstract base class for ASCII glyph mapping strategies."""
@@ -20,6 +62,7 @@ class AsciiStrategy(ABC):
         ramp: str,
         auto_contrast: bool = True,
         grid_alpha: np.ndarray | None = None,
+        dither: bool = False,
     ) -> list[list[str]]:
         """Map a 2D luma grid to a 2D grid of character strings.
         Args:
@@ -27,6 +70,7 @@ class AsciiStrategy(ABC):
             ramp: String of ASCII characters to use for mapping.
             auto_contrast: Whether to adjust the contrast of luma values.
             grid_alpha: Optional 2D array of alpha values (0.0-1.0).
+            dither: Whether to apply Floyd-Steinberg dithering.
         Returns:
             A list of lists of characters representing the mapped grid.
         """
@@ -42,6 +86,7 @@ class BrightnessStrategy(AsciiStrategy):
         ramp: str,
         auto_contrast: bool = True,
         grid_alpha: np.ndarray | None = None,
+        dither: bool = False,
     ) -> list[list[str]]:
         min_luma = grid_luma.min()
         max_luma = grid_luma.max()
@@ -52,7 +97,11 @@ class BrightnessStrategy(AsciiStrategy):
             norm_luma = np.clip(grid_luma, 0.0, 255.0)
 
         ramp_len = len(ramp)
+        if dither:
+            norm_luma = _dither_luma_2d_jit(norm_luma, ramp_len)
+
         indices = np.round((norm_luma / 255.0) * (ramp_len - 1)).astype(np.int32)
+        indices = np.clip(indices, 0, ramp_len - 1)
 
         rows, cols = indices.shape
         char_grid = [[ramp[idx] for idx in row] for row in indices]
@@ -81,6 +130,7 @@ class EdgeStrategy(AsciiStrategy):
         ramp: str,
         auto_contrast: bool = True,
         grid_alpha: np.ndarray | None = None,
+        dither: bool = False,
     ) -> list[list[str]]:
         if not HAS_SCIPY:
             raise ImportError(
@@ -88,7 +138,9 @@ class EdgeStrategy(AsciiStrategy):
                 "Install it with: pip install img2ascii-py[edges]"
             )
 
-        char_grid = self.fallback.map_luma(grid_luma, ramp, auto_contrast, grid_alpha)
+        char_grid = self.fallback.map_luma(
+            grid_luma, ramp, auto_contrast, grid_alpha, dither
+        )
 
         dx = sobel(grid_luma, axis=1)
         dy = sobel(grid_luma, axis=0)
@@ -127,6 +179,7 @@ def map_luma_to_ascii(
     auto_contrast: bool = True,
     use_edges: bool = False,
     grid_alpha: np.ndarray | None = None,
+    dither: bool = False,
 ) -> str:
     """Map a 2D luma array to ASCII characters using the provided character ramp, optionally using SciPy Sobel filters to outline edges.
     Args:
@@ -135,11 +188,12 @@ def map_luma_to_ascii(
         auto_contrast: Whether to automatically adjust the contrast of the luma values.
         use_edges: Whether to map edge contours to line characters using SciPy Sobel filter.
         grid_alpha: Optional 2D array of alpha values (0.0-1.0).
+        dither: Whether to apply Floyd-Steinberg dithering.
     Returns:
         String containing the ASCII art.
     """
     strategy = EdgeStrategy() if use_edges else BrightnessStrategy()
-    char_grid = strategy.map_luma(grid_luma, ramp, auto_contrast, grid_alpha)
+    char_grid = strategy.map_luma(grid_luma, ramp, auto_contrast, grid_alpha, dither)
     return "\n".join("".join(row) for row in char_grid)
 
 
@@ -152,6 +206,7 @@ class AsciiArtRenderer(BaseRenderer):
         auto_contrast: bool = True,
         use_edges: bool = False,
         strategy: AsciiStrategy | None = None,
+        dither: bool = False,
     ):
         self.ramp = ramp
         self.auto_contrast = auto_contrast
@@ -159,6 +214,7 @@ class AsciiArtRenderer(BaseRenderer):
         self.strategy = strategy or (
             EdgeStrategy() if use_edges else BrightnessStrategy()
         )
+        self.dither = dither
 
     def render(
         self, grid_rgb: np.ndarray, grid_luma: np.ndarray, grid_alpha: np.ndarray
@@ -172,6 +228,6 @@ class AsciiArtRenderer(BaseRenderer):
             String containing the ASCII art.
         """
         char_grid = self.strategy.map_luma(
-            grid_luma, self.ramp, self.auto_contrast, grid_alpha
+            grid_luma, self.ramp, self.auto_contrast, grid_alpha, self.dither
         )
         return "\n".join("".join(row) for row in char_grid)

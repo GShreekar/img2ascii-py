@@ -26,6 +26,8 @@ Built with performance in mind using fully vectorized NumPy operations, `img2asc
 - **Smart Image Handling**: Automatically transposes images based on EXIF rotation tags and handles transparent PNG alpha channels gracefully.
 - **Full Stream Piping**: Pipe binary image streams directly into the CLI via `stdin`.
 - **Luma Weighting Options**: Choose between BT.601 (SD) and BT.709 (HD) perceptual brightness weights for luma mapping.
+- **Floyd-Steinberg Dithering**: Enable Floyd-Steinberg error diffusion dithering in ASCII and HTML modes to reduce color/brightness banding and preserve fine detail.
+
 
 
 ---
@@ -130,6 +132,12 @@ Use the HD-video-standard (BT.709) luma coefficients for conversion:
 img2ascii path/to/image.jpg --width 80 --luma-method bt709
 ```
 
+#### 12. Floyd-Steinberg Dithering
+Reduce gradient banding by diffusing quantization error:
+```bash
+img2ascii path/to/image.jpg --width 120 --dither
+```
+
 ---
 
 ## Library API Reference
@@ -150,7 +158,8 @@ config = AsciiConfig(
     auto_contrast=True,    # Stretch luma values for maximum dynamic range
     fast=True,             # Optional: Enable Numba JIT acceleration
     edges=True,            # Optional: Enable SciPy Sobel edge-enhancement
-    luma_method="bt709"    # Optional: "bt601" or "bt709" luma weighting
+    luma_method="bt709",   # Optional: "bt601" or "bt709" luma weighting
+    dither=True            # Optional: Enable Floyd-Steinberg error diffusion
 )
 
 
