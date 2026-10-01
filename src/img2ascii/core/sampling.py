@@ -2,7 +2,7 @@ import numpy as np
 from PIL import Image
 
 try:
-    from numba import jit  # type: ignore[import-untyped]
+    from numba import jit
 
     HAS_NUMBA = True
 except ImportError:

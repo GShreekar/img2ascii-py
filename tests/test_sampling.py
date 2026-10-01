@@ -1,5 +1,8 @@
 import numpy as np
+import pytest
+
 import img2ascii.core.sampling as sampling
+from img2ascii.core.sampling import HAS_NUMBA
 
 
 def test_sample_grid_same_dimensions():
@@ -35,6 +38,7 @@ def test_sample_grid_downsample():
     np.testing.assert_allclose(alpha_out, 1.0)
 
 
+@pytest.mark.skipif(not HAS_NUMBA, reason="requires the optional numba extra")
 def test_sample_grid_fast():
     rgba = np.zeros((8, 8, 4), dtype=np.float32)
     rgba[:, :, :3] = 100.0
@@ -56,9 +60,10 @@ def test_sample_grid_fast():
 def test_sample_grid_fast_missing_numba():
     rgba = np.zeros((8, 8, 4), dtype=np.float32)
     luma = np.ones((8, 8), dtype=np.float32) * 50.0
-    from unittest.mock import patch
-    import pytest
     import sys
+    from unittest.mock import patch
+
+    import pytest
 
     active_sampling = sys.modules["img2ascii.core.sampling"]
     with patch.object(active_sampling, "HAS_NUMBA", False):
@@ -68,7 +73,7 @@ def test_sample_grid_fast_missing_numba():
 
 
 def test_numba_block_avg_py_func():
-    from img2ascii.core.sampling import _numba_block_avg_3d, _numba_block_avg_2d
+    from img2ascii.core.sampling import _numba_block_avg_2d, _numba_block_avg_3d
 
     func_3d = getattr(_numba_block_avg_3d, "py_func", _numba_block_avg_3d)
     func_2d = getattr(_numba_block_avg_2d, "py_func", _numba_block_avg_2d)

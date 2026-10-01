@@ -1,17 +1,21 @@
+from __future__ import annotations
+
 import argparse
 import sys
 from typing import Union
+
+from img2ascii._version import __version__
 from img2ascii.api import (
-    convert_to_ascii,
     AsciiConfig,
-    convert_to_pixels,
-    PixelConfig,
-    convert_to_svg,
-    convert_to_html,
     HtmlConfig,
+    PixelConfig,
+    convert_to_ascii,
+    convert_to_html,
+    convert_to_pixels,
+    convert_to_svg,
 )
-from img2ascii.exceptions import Img2AsciiError
 from img2ascii.charsets import CHARSETS
+from img2ascii.exceptions import Img2AsciiError
 
 
 def main() -> None:
@@ -20,6 +24,9 @@ def main() -> None:
     )
     parser.add_argument(
         "source", help="Path to the input image, or '-' to read from standard input."
+    )
+    parser.add_argument(
+        "--version", action="version", version=f"img2ascii-py {__version__}"
     )
     parser.add_argument(
         "-o",
@@ -61,7 +68,10 @@ def main() -> None:
         "--mode",
         choices=["ascii", "pixel", "svg", "html"],
         default="ascii",
-        help="Rendering mode: 'ascii' (default), 'pixel' (pixel-exact HTML), 'svg' (SVG), or 'html' (HTML ASCII).",
+        help=(
+            "Rendering mode: 'ascii' (default), 'pixel' (pixel-exact HTML), "
+            "'svg' (SVG), or 'html' (HTML ASCII)."
+        ),
     )
     parser.add_argument(
         "--fast",
@@ -93,19 +103,25 @@ def main() -> None:
     parser.add_argument(
         "--allow-large",
         action="store_true",
-        help="Allow processing very large grids in pixel/html modes.",
+        help="Allow processing very large grids (bypasses the cell-count safety limit).",
     )
     parser.add_argument(
         "--palette-size",
         type=int,
         default=None,
-        help="Number of colors to quantize the image to (pixel/SVG/html modes only). Must be between 2 and 256.",
+        help=(
+            "Number of colors to quantize the image to (pixel/SVG/html modes only). "
+            "Must be between 2 and 256."
+        ),
     )
     parser.add_argument(
         "--luma-method",
         choices=["bt601", "bt709"],
         default="bt601",
-        help="Luma conversion weighting method: 'bt601' (default SD weights) or 'bt709' (HD weights).",
+        help=(
+            "Luma conversion weighting method: 'bt601' (default SD weights) or "
+            "'bt709' (HD weights)."
+        ),
     )
 
     args = parser.parse_args()
@@ -137,6 +153,7 @@ def main() -> None:
                 fast=args.fast,
                 edges=args.edges,
                 luma_method=args.luma_method,
+                allow_large=args.allow_large,
             )
             output = convert_to_ascii(source_data, ascii_config)
         elif args.mode == "pixel":
@@ -167,7 +184,8 @@ def main() -> None:
                 luma_method=args.luma_method,
             )
             output = convert_to_svg(source_data, pixel_config)
-        elif args.mode == "html":
+        else:
+            # argparse restricts --mode to the four choices, so this is the html case.
             html_config = HtmlConfig(
                 width=args.width,
                 height=args.height,
@@ -195,10 +213,10 @@ def main() -> None:
             sys.stdout.write(output)
             if not output.endswith("\n") and args.mode == "ascii":
                 sys.stdout.write("\n")
-    except Img2AsciiError as e:
+    except (Img2AsciiError, ValueError, ImportError) as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
-    except ImportError as e:
+    except OSError as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
     except Exception as e:

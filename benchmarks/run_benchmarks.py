@@ -1,13 +1,15 @@
-import time
 import cProfile
-import pstats
 import io
+import pstats
+import time
+
 import numpy as np
 from PIL import Image
+
+from img2ascii.core.aspect import target_grid_size
 from img2ascii.core.loader import load_image
 from img2ascii.core.preprocess import preprocess_image
 from img2ascii.core.sampling import sample_grid
-from img2ascii.core.aspect import target_grid_size
 from img2ascii.renderers.ascii_art import AsciiArtRenderer
 from img2ascii.renderers.pixel_exact import PixelExactRenderer
 
@@ -30,7 +32,8 @@ def run_benchmark_for_size(width: int, height: int):
     rgba_arr = load_image(img_bytes)
     t_load = time.perf_counter() - t0
     print(
-        f"Load Image (from PNG bytes): {t_load:.4f}s | shape: {rgba_arr.shape} | dtype: {rgba_arr.dtype}"
+        f"Load Image (from PNG bytes): {t_load:.4f}s | shape: {rgba_arr.shape} "
+        f"| dtype: {rgba_arr.dtype}"
     )
     assert rgba_arr.dtype == np.uint8, f"Expected uint8, got {rgba_arr.dtype}"
 
@@ -39,17 +42,19 @@ def run_benchmark_for_size(width: int, height: int):
     rgba_prep, luma_prep = preprocess_image(rgba_arr)
     t_preprocess = time.perf_counter() - t0
     print(
-        f"Preprocess Image:            {t_preprocess:.4f}s | rgba dtype: {rgba_prep.dtype} | luma dtype: {luma_prep.dtype}"
+        f"Preprocess Image:            {t_preprocess:.4f}s "
+        f"| rgba dtype: {rgba_prep.dtype} | luma dtype: {luma_prep.dtype}"
     )
     assert rgba_prep.dtype == np.float32, f"Expected float32, got {rgba_prep.dtype}"
     assert luma_prep.dtype == np.float32, f"Expected float32, got {luma_prep.dtype}"
 
-    # Target grid dimensions (standard width 80 for normal scaling, but let's test a larger grid e.g. width=400)
+    # Target grid dimensions (width 80 is the default; 400 exercises a larger grid)
     target_cols, target_rows = target_grid_size(
         width, height, out_width=400, char_aspect=2.0
     )
     print(
-        f"Target Grid Size:            {target_cols}x{target_rows} ({target_cols * target_rows} cells)"
+        f"Target Grid Size:            {target_cols}x{target_rows} "
+        f"({target_cols * target_rows} cells)"
     )
 
     # Measure Sampling (fast=False)
@@ -65,9 +70,7 @@ def run_benchmark_for_size(width: int, height: int):
     # Try JIT if possible
     try:
         t0 = time.perf_counter()
-        rgb_grid_fast, luma_grid_fast, alpha_grid_fast = sample_grid(
-            rgba_prep, luma_prep, target_cols, target_rows, fast=True
-        )
+        sample_grid(rgba_prep, luma_prep, target_cols, target_rows, fast=True)
         t_sample_fast = time.perf_counter() - t0
         print(f"Sampling (fast=True JIT):    {t_sample_fast:.4f}s")
     except Exception as e:
@@ -102,7 +105,8 @@ def run_benchmark_for_size(width: int, height: int):
     pixel_out = pixel_renderer.render(rgb_grid, luma_grid, alpha_grid)
     t_render_pixel = time.perf_counter() - t0
     print(
-        f"Render Pixel HTML:           {t_render_pixel:.4f}s | HTML size: {len(pixel_out) / 1024:.2f} KB"
+        f"Render Pixel HTML:           {t_render_pixel:.4f}s "
+        f"| HTML size: {len(pixel_out) / 1024:.2f} KB"
     )
 
 

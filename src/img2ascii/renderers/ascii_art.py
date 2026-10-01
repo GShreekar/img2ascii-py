@@ -1,16 +1,20 @@
-import numpy as np
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
+
+import numpy as np
+
 from img2ascii.renderers.base import BaseRenderer
 
 try:
-    from scipy.ndimage import sobel  # type: ignore[import-untyped]
+    from scipy.ndimage import sobel
 
     HAS_SCIPY = True
 except ImportError:
     HAS_SCIPY = False
 
 try:
-    from numba import jit  # type: ignore[import-untyped]
+    from numba import jit
 
     HAS_NUMBA = True
 except ImportError:
@@ -19,14 +23,14 @@ except ImportError:
 
 def _dither_luma_2d(norm_luma: np.ndarray, ramp_len: int) -> np.ndarray:
     rows, cols = norm_luma.shape
-    dithered = norm_luma.copy().astype(np.float32)
+    dithered: np.ndarray = norm_luma.copy().astype(np.float32)
     max_idx = ramp_len - 1
     factor = 255.0 / max_idx
 
     for r in range(rows):
         for c in range(cols):
             old_val = dithered[r, c]
-            idx = int(round(old_val / factor))
+            idx = int(round(old_val / factor))  # noqa: RUF046 - numba needs the cast
             if idx < 0:
                 idx = 0
             elif idx > max_idx:
@@ -181,7 +185,8 @@ def map_luma_to_ascii(
     grid_alpha: np.ndarray | None = None,
     dither: bool = False,
 ) -> str:
-    """Map a 2D luma array to ASCII characters using the provided character ramp, optionally using SciPy Sobel filters to outline edges.
+    """Map a 2D luma array to ASCII characters using the provided character ramp,
+    optionally using SciPy Sobel filters to outline edges.
     Args:
         grid_luma: 2D array of luma values (0-255).
         ramp: String of ASCII characters to use for mapping.

@@ -1,4 +1,5 @@
 import numpy as np
+
 from img2ascii.color import rgb_to_hex
 from img2ascii.renderers.pixel_exact import PixelExactRenderer
 
@@ -68,7 +69,9 @@ def test_pixel_exact_renderer_transparency():
     html = renderer.render(grid_rgb, grid_luma, grid_alpha)
 
     assert "<!DOCTYPE html>" in html
-    assert ".c_ff000080 { color: rgba(255, 0, 0, 0.5); }" in html
+    # 0.5 alpha quantises to byte 0x80, and the emitted alpha matches that byte so a
+    # shared class name can never carry two different colors.
+    assert ".c_ff000080 { color: rgba(255, 0, 0, 0.502); }" in html
     assert ".c_00ff00 { color: #00ff00; }" in html
     assert '<span class="c_ff000080">██</span>' in html
     assert '<span class="c_00ff00">██</span>' in html

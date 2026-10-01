@@ -1,9 +1,10 @@
-import pytest
 import numpy as np
+import pytest
 from PIL import Image
-from img2ascii.renderers.svg import SvgRenderer
-from img2ascii.api import convert_to_svg, PixelConfig
+
+from img2ascii.api import PixelConfig, convert_to_svg
 from img2ascii.exceptions import ImageTooLargeError
+from img2ascii.renderers.svg import SvgRenderer
 
 
 def test_svg_renderer_basic():
@@ -54,10 +55,13 @@ def test_svg_renderer_transparency():
 
     # Background rect shouldn't be added if background is transparent
     assert 'fill="transparent"' not in svg
-    # Row 0 has run of 2 with rgba(255,0,0,0.5)
+    # Row 0 has a run of 2 at half opacity. SVG 1.1 has no rgba() color syntax, so
+    # transparency has to travel in fill-opacity.
     assert (
-        '<rect x="0" y="0.0" width="2" height="2.0" fill="rgba(255,0,0,0.5)" />' in svg
+        '<rect x="0" y="0.0" width="2" height="2.0" fill="#ff0000" fill-opacity="0.5" />'
+        in svg
     )
+    assert "rgba(" not in svg
     # Row 1 has run of 2 with alpha = 0.0, so no rects should be output
     assert 'y="2.0"' not in svg
 

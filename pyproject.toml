@@ -7,19 +7,22 @@ name = "img2ascii-py"
 dynamic = ["version"]
 description = "A Python library and CLI tool to convert images to ASCII art and pixel-perfect HTML/SVG."
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [
     { name = "G Shreekar", email = "144794118+GShreekar@users.noreply.github.com" }
 ]
 classifiers = [
+    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Multimedia :: Graphics",
     "Topic :: Artistic Software",
     "Environment :: Console",
+    "Typing :: Typed",
 ]
 dependencies = [
     "numpy>=1.20.0",
@@ -36,10 +39,15 @@ dev = [
     "mypy>=1.0.0",
     "ruff>=0.1.0",
     "hypothesis>=6.0.0",
+    "tomli>=2.0.0; python_version < '3.11'",
 ]
 all = [
     "img2ascii-py[fast,edges,dev]"
 ]
+
+[project.urls]
+Homepage = "https://github.com/GShreekar/img2ascii"
+Issues = "https://github.com/GShreekar/img2ascii/issues"
 
 [project.scripts]
 img2ascii = "img2ascii.cli.main:main"
@@ -49,3 +57,42 @@ path = "src/img2ascii/_version.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/img2ascii"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "B",    # bugbear: catches the useless-expression class of bug
+    "I",    # import sorting
+    "C4",   # comprehensions
+    "SIM",  # simplifications
+    "RUF",  # ruff-specific
+]
+
+[tool.mypy]
+# Pinned to the floor in requires-python so version-specific syntax is caught here.
+python_version = "3.10"
+files = ["src"]
+strict = true
+warn_unreachable = true
+
+[[tool.mypy.overrides]]
+module = ["numba.*", "scipy.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --strict-markers"
+filterwarnings = ["error::ResourceWarning"]
+
+[tool.coverage.run]
+branch = true
+source = ["img2ascii"]
+
+[tool.coverage.report]
+show_missing = true

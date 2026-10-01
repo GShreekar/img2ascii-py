@@ -18,11 +18,14 @@ Built with performance in mind using fully vectorized NumPy operations, `img2asc
 - **Pixel-Exact SVG Vector Output**: Convert images into scalable, clean SVG vector graphics with RLE-optimized `<rect>` nodes.
 - **Curated Preset Ramps**: Includes preset charsets:
   - `standard`: ` .:-=+*#%@`
-  - `detailed`: `$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\|()1{}[]?-_+~<>i! lI;:,"^`'. `
+  - `detailed`: `` .'`^",:;Il!i><~+_-?][}{1)(|\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$ ``
   - `blocks`: `░▒▓█`
   - `binary`: ` #`
   - `minimal`: ` .o0@`
   - Custom: Pass any string directly as your ramp!
+
+  Every ramp is ordered lightest-glyph-first, so the darkest parts of an image map to the
+  first character. Use `--invert` to flip it for light-on-dark terminals.
 - **Smart Image Handling**: Automatically transposes images based on EXIF rotation tags and handles transparent PNG alpha channels gracefully.
 - **Full Stream Piping**: Pipe binary image streams directly into the CLI via `stdin`.
 - **Luma Weighting Options**: Choose between BT.601 (SD) and BT.709 (HD) perceptual brightness weights for luma mapping.
@@ -33,6 +36,8 @@ Built with performance in mind using fully vectorized NumPy operations, `img2asc
 ---
 
 ## Installation
+
+Requires Python 3.10 or newer.
 
 Install the package directly from PyPI:
 

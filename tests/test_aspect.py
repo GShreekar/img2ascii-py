@@ -1,4 +1,7 @@
+import pytest
+
 from img2ascii.core.aspect import target_grid_size
+from img2ascii.exceptions import InvalidDimensionsError
 
 
 def test_target_grid_size_defaults():
@@ -44,3 +47,38 @@ def test_target_grid_size_minimum():
     cols, rows = target_grid_size(1, 1000, out_height=1, char_aspect=2.0)
     assert cols == 1
     assert rows == 1
+
+
+def test_rejects_non_positive_output_dimensions():
+    # A zero width used to reach the sampler and raise ZeroDivisionError.
+    for kwargs in [
+        {"out_width": 0},
+        {"out_height": 0},
+        {"out_width": -5},
+        {"out_height": -1},
+        {"out_width": 0, "out_height": 10},
+        {"out_width": 10, "out_height": 0},
+    ]:
+        with pytest.raises(InvalidDimensionsError):
+            target_grid_size(100, 100, **kwargs)
+
+
+def test_rejects_non_integer_output_dimensions():
+    with pytest.raises(InvalidDimensionsError):
+        target_grid_size(100, 100, out_width=10.5)  # type: ignore[arg-type]
+    with pytest.raises(InvalidDimensionsError):
+        target_grid_size(100, 100, out_width=True)  # type: ignore[arg-type]
+
+
+def test_rejects_non_positive_char_aspect():
+    # Zero raised ZeroDivisionError; a negative value silently produced garbage.
+    for bad in [0.0, -1.0, float("nan"), float("inf")]:
+        with pytest.raises(InvalidDimensionsError):
+            target_grid_size(100, 100, out_width=80, char_aspect=bad)
+
+
+def test_rejects_empty_image():
+    with pytest.raises(InvalidDimensionsError):
+        target_grid_size(0, 10)
+    with pytest.raises(InvalidDimensionsError):
+        target_grid_size(10, 0)

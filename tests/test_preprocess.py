@@ -1,4 +1,5 @@
 import numpy as np
+
 from img2ascii.core.preprocess import preprocess_image
 
 

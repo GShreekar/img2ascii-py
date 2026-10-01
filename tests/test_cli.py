@@ -1,8 +1,19 @@
 import io
 from unittest.mock import patch
+
 import pytest
 from PIL import Image
+
 from img2ascii.cli.main import main
+from img2ascii.core.sampling import HAS_NUMBA
+from img2ascii.renderers.ascii_art import HAS_SCIPY
+
+requires_numba = pytest.mark.skipif(
+    not HAS_NUMBA, reason="requires the optional numba extra"
+)
+requires_scipy = pytest.mark.skipif(
+    not HAS_SCIPY, reason="requires the optional scipy extra"
+)
 
 
 def test_cli_help():
@@ -149,6 +160,27 @@ def test_cli_stdin_read_error():
         assert "Error reading from stdin" in mock_stderr.getvalue()
 
 
+def test_cli_value_error_is_reported_as_a_plain_error(tmp_path):
+    img_path = tmp_path / "test.png"
+    img = Image.new("RGB", (10, 10), color=(255, 255, 255))
+    img.save(img_path)
+
+    with (
+        patch("sys.argv", ["img2ascii", str(img_path)]),
+        patch(
+            "img2ascii.cli.main.convert_to_ascii",
+            side_effect=ValueError("bad option"),
+        ),
+        patch("sys.stderr", new_callable=io.StringIO) as mock_stderr,
+    ):
+        with pytest.raises(SystemExit) as excinfo:
+            main()
+        assert excinfo.value.code == 1
+        stderr = mock_stderr.getvalue()
+        assert "Error: bad option" in stderr
+        assert "Unexpected error" not in stderr
+
+
 def test_cli_unexpected_error(tmp_path):
     img_path = tmp_path / "test.png"
     img = Image.new("RGB", (10, 10), color=(255, 255, 255))
@@ -158,7 +190,7 @@ def test_cli_unexpected_error(tmp_path):
         patch("sys.argv", ["img2ascii", str(img_path)]),
         patch(
             "img2ascii.cli.main.convert_to_ascii",
-            side_effect=ValueError("unexpected value error"),
+            side_effect=RuntimeError("internal failure"),
         ),
         patch("sys.stderr", new_callable=io.StringIO) as mock_stderr,
     ):
@@ -168,6 +200,8 @@ def test_cli_unexpected_error(tmp_path):
         assert "Unexpected error" in mock_stderr.getvalue()
 
 
+@requires_numba
+@requires_scipy
 def test_cli_fast_and_edges(tmp_path):
     img_path = tmp_path / "test.png"
     img = Image.new("RGB", (10, 10), color=(255, 255, 255))
@@ -194,6 +228,7 @@ def test_cli_fast_and_edges(tmp_path):
         assert len(output) > 0
 
 
+@requires_numba
 def test_cli_pixel_fast(tmp_path):
     img_path = tmp_path / "test.png"
     img = Image.new("RGB", (10, 10), color=(255, 255, 255))
@@ -382,6 +417,8 @@ def test_cli_html_mode(tmp_path):
         assert "@@@@@" in output  # maps to standard ramp @ for white
 
 
+@requires_numba
+@requires_scipy
 def test_cli_html_mode_options(tmp_path):
     img_path = tmp_path / "test.png"
     img = Image.new("RGB", (10, 10), color=(255, 255, 255))
@@ -502,3 +539,20 @@ def test_cli_dither(tmp_path):
         output_no_dither = mock_stdout.getvalue()
 
     assert output_dither != output_no_dither
+
+
+def test_cli_unwritable_output_path_reports_a_plain_error(tmp_path):
+    img_path = tmp_path / "test.png"
+    Image.new("RGB", (10, 10), color=(255, 255, 255)).save(img_path)
+    missing_dir = tmp_path / "does-not-exist" / "out.txt"
+
+    with (
+        patch("sys.argv", ["img2ascii", str(img_path), "-o", str(missing_dir)]),
+        patch("sys.stderr", new_callable=io.StringIO) as mock_stderr,
+    ):
+        with pytest.raises(SystemExit) as excinfo:
+            main()
+        assert excinfo.value.code == 1
+        stderr = mock_stderr.getvalue()
+        assert "Error:" in stderr
+        assert "Unexpected error" not in stderr

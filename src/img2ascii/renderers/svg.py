@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import numpy as np
+
+from img2ascii.color import parse_color, rgb_to_hex
 from img2ascii.renderers.base import BaseRenderer
-from img2ascii.color import rgb_to_hex
 
 
 class SvgRenderer(BaseRenderer):
@@ -8,7 +11,10 @@ class SvgRenderer(BaseRenderer):
 
     def __init__(self, bg_color: str = "#000000", char_aspect: float = 2.0):
         super().__init__()
-        self.bg_color = bg_color
+        # Parsed up front so the caller's string never reaches the XML attribute.
+        red, green, blue, alpha = parse_color(bg_color)
+        self.bg_color = rgb_to_hex(red, green, blue)
+        self.bg_opacity = alpha
         self.char_aspect = char_aspect
 
     def run_length_encode_row(
@@ -52,12 +58,15 @@ class SvgRenderer(BaseRenderer):
         svg_height = row_count * self.char_aspect
 
         svg_lines = [
-            f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {svg_width} {svg_height}" width="{svg_width}" height="{svg_height}">'
+            '<svg xmlns="http://www.w3.org/2000/svg" '
+            f'viewBox="0 0 {svg_width} {svg_height}" '
+            f'width="{svg_width}" height="{svg_height}">'
         ]
 
-        if self.bg_color and self.bg_color.lower() != "transparent":
+        if self.bg_opacity > 0.0:
             svg_lines.append(
-                f'  <rect width="{svg_width}" height="{svg_height}" fill="{self.bg_color}" />'
+                f'  <rect width="{svg_width}" height="{svg_height}" '
+                f'fill="{self.bg_color}"{_opacity_attr(self.bg_opacity)} />'
             )
 
         for r in range(row_count):
@@ -77,15 +86,22 @@ class SvgRenderer(BaseRenderer):
             for color, length in runs:
                 r_val, g_val, b_val, a_val = color
                 if a_val > 0.0:
-                    if a_val >= 0.999:
-                        fill_str = rgb_to_hex(r_val, g_val, b_val)
-                    else:
-                        fill_str = f"rgba({r_val},{g_val},{b_val},{round(a_val, 3)})"
-
                     svg_lines.append(
-                        f'  <rect x="{c_idx}" y="{y_pos}" width="{length}" height="{self.char_aspect}" fill="{fill_str}" />'
+                        f'  <rect x="{c_idx}" y="{y_pos}" width="{length}" '
+                        f'height="{self.char_aspect}" fill="{rgb_to_hex(r_val, g_val, b_val)}'
+                        f'"{_opacity_attr(a_val)} />'
                     )
                 c_idx += length
 
         svg_lines.append("</svg>")
         return "\n".join(svg_lines)
+
+
+def _opacity_attr(alpha: float) -> str:
+    """Returns a fill-opacity attribute, omitted when fully opaque.
+
+    SVG 1.1 has no rgba() color syntax, so partial transparency belongs in fill-opacity.
+    """
+    if alpha >= 0.999:
+        return ""
+    return f' fill-opacity="{round(alpha, 3)}"'

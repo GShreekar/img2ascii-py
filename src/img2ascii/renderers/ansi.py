@@ -1,4 +1,5 @@
 import os
+
 import numpy as np
 
 
@@ -10,9 +11,7 @@ def supports_color() -> bool:
     if colorterm in ("truecolor", "24bit"):
         return True
     term = os.getenv("TERM")
-    if term and ("xterm" in term or "color" in term):
-        return True
-    return False
+    return bool(term and ("xterm" in term or "color" in term))
 
 
 def build_ansi_output(

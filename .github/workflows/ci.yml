@@ -1,0 +1,102 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[all]"
+      - name: Ruff
+        run: ruff check .
+      - name: Mypy
+        run: mypy
+
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install -e ".[all]"
+      - name: Tests
+        run: pytest --cov --cov-report=term-missing
+
+  # The optional extras are optional, so the package has to work without them.
+  test-core-only:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev]"
+      - name: Tests without numba or scipy
+        run: pytest
+
+  # Catches syntax or annotation use that breaks the declared requires-python floor.
+  import-on-floor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - run: pip install .
+      - name: Import every module
+        run: |
+          python - <<'EOF'
+          import importlib, pkgutil
+          import img2ascii
+          failed = []
+          for mod in pkgutil.walk_packages(img2ascii.__path__, "img2ascii."):
+              try:
+                  importlib.import_module(mod.name)
+              except Exception as exc:
+                  failed.append(f"{mod.name}: {exc!r}")
+          assert not failed, failed
+          print("all modules import cleanly")
+          EOF
+      - name: CLI smoke test
+        run: |
+          python -c "from PIL import Image; Image.new('RGB', (32, 24), (90, 140, 200)).save('smoke.png')"
+          img2ascii smoke.png --width 20
+          img2ascii --version
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install build twine
+      - run: python -m build
+      - run: twine check dist/*
+      - name: Verify py.typed is shipped in the wheel
+        run: |
+          python - <<'EOF'
+          import glob, zipfile
+          wheel = glob.glob("dist/*.whl")[0]
+          names = zipfile.ZipFile(wheel).namelist()
+          assert "img2ascii/py.typed" in names, names
+          print("py.typed present in", wheel)
+          EOF

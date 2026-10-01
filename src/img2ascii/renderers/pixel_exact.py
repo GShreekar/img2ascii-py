@@ -1,9 +1,32 @@
+from __future__ import annotations
+
+from html import escape
+from typing import Dict, Optional, Sequence, Set, Tuple, Union, cast
+
 import numpy as np
-from typing import Union, Tuple, Dict, Set, Sequence, Optional, cast
+
+from img2ascii.color import parse_color, rgb_to_hex, to_css_color
+from img2ascii.exceptions import InvalidGlyphError
 from img2ascii.renderers.base import BaseRenderer
-from img2ascii.color import rgb_to_hex
 
 ColorTuple = Union[Tuple[int, int, int], Tuple[int, int, int, float]]
+
+
+def validate_glyph(glyph: str) -> str:
+    """Checks that a glyph is a single printable character.
+
+    Multi-character glyphs would break column alignment, and control characters would
+    shift the rendered grid.
+    """
+    if not isinstance(glyph, str):
+        raise InvalidGlyphError(f"Glyph must be a string, got {type(glyph).__name__}.")
+    if len(glyph) != 1:
+        raise InvalidGlyphError(
+            f"Glyph must be exactly one character, got {len(glyph)}: {glyph!r}"
+        )
+    if not glyph.isprintable():
+        raise InvalidGlyphError(f"Glyph must be printable, got {glyph!r}")
+    return glyph
 
 
 class PixelExactRenderer(BaseRenderer):
@@ -17,8 +40,9 @@ class PixelExactRenderer(BaseRenderer):
         char_aspect: float = 2.0,
     ):
         super().__init__()
-        self.glyph = glyph
-        self.bg_color = bg_color
+        self.glyph = validate_glyph(glyph)
+        # Parsed up front so the caller's string never reaches the stylesheet.
+        self.bg_color = to_css_color(parse_color(bg_color))
         if aspect_mode not in ("resize", "css"):
             raise ValueError(
                 f"Invalid aspect_mode: {aspect_mode}. Must be 'resize' or 'css'."
@@ -85,10 +109,7 @@ class PixelExactRenderer(BaseRenderer):
                 )
                 for c in range(col_count)
             ]
-            if glyphs is not None:
-                row_glyphs = glyphs[r]
-            else:
-                row_glyphs = [self.glyph] * col_count
+            row_glyphs = glyphs[r] if glyphs is not None else [self.glyph] * col_count
             runs = self.run_length_encode_row(row_colors, row_glyphs)
             encoded_runs.append(runs)
             for color in row_colors:
@@ -110,22 +131,26 @@ class PixelExactRenderer(BaseRenderer):
         ]
 
         rgb2css: Dict[ColorTuple, str] = {}
+        emitted_classes: Set[str] = set()
         for color in sorted(unique_colors):
             r, g, b, a = cast(Tuple[int, int, int, float], color)
 
             if a >= 0.999:
                 rgb_hex = rgb_to_hex(r, g, b)
                 class_name = f"c_{rgb_hex[1:]}"
-                rgb2css[color] = class_name
-                style_rules.append(f".{class_name} {{ color: {rgb_hex}; }}")
+                declaration = f".{class_name} {{ color: {rgb_hex}; }}"
             else:
-                a_hex = f"{int(round(a * 255)):02x}"
-                class_name = f"c_{r:02x}{g:02x}{b:02x}{a_hex}"
-                rgb2css[color] = class_name
-                a_val = round(a, 3)
-                style_rules.append(
-                    f".{class_name} {{ color: rgba({r}, {g}, {b}, {a_val}); }}"
-                )
+                # The class name and the declaration are derived from the same quantised
+                # alpha, so two cells sharing a name cannot disagree on the color.
+                alpha_byte = round(a * 255)
+                class_name = f"c_{r:02x}{g:02x}{b:02x}{alpha_byte:02x}"
+                a_val = round(alpha_byte / 255.0, 3)
+                declaration = f".{class_name} {{ color: rgba({r}, {g}, {b}, {a_val}); }}"
+
+            rgb2css[color] = class_name
+            if class_name not in emitted_classes:
+                emitted_classes.add(class_name)
+                style_rules.append(declaration)
 
         style_block = "<style>\n" + "\n".join(style_rules) + "\n</style>"
 
@@ -134,7 +159,7 @@ class PixelExactRenderer(BaseRenderer):
             row_spans = []
             for color, glyph, length in encoded_runs[r]:
                 class_name = rgb2css[color]
-                repeated_text = glyph * length
+                repeated_text = escape(glyph * length, quote=False)
                 row_spans.append(f'<span class="{class_name}">{repeated_text}</span>')
             markup_lines.append("".join(row_spans))
         markup_lines.append("</pre>")

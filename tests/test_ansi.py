@@ -1,7 +1,9 @@
 import os
-import numpy as np
 from unittest import mock
-from img2ascii.renderers.ansi import supports_color, build_ansi_output
+
+import numpy as np
+
+from img2ascii.renderers.ansi import build_ansi_output, supports_color
 
 
 def test_supports_color():

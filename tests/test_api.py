@@ -1,17 +1,23 @@
-import numpy as np
-from PIL import Image
 from unittest.mock import patch
-from img2ascii.api import (
-    convert_to_ascii,
-    AsciiConfig,
-    convert_to_pixels,
-    PixelConfig,
-    convert_to_svg,
-    convert_to_html,
-    HtmlConfig,
-)
-from img2ascii.exceptions import ImageTooLargeError
+
+import numpy as np
 import pytest
+from PIL import Image
+
+from img2ascii.api import (
+    AsciiConfig,
+    HtmlConfig,
+    PixelConfig,
+    convert_to_ascii,
+    convert_to_html,
+    convert_to_pixels,
+    convert_to_svg,
+)
+from img2ascii.exceptions import (
+    ImageTooLargeError,
+    InvalidCharsetError,
+    InvalidDimensionsError,
+)
 
 
 def test_convert_to_ascii_pillow_image():
@@ -294,3 +300,74 @@ def test_dithering_html():
 
     assert html_no_dither != html_dither
     assert len(html_dither) > 0
+
+
+def test_convert_to_ascii_enforces_the_cell_limit():
+    """A huge --width used to upscale the source and exhaust memory."""
+    img = Image.new("RGB", (64, 48), color=(120, 120, 120))
+
+    with pytest.raises(ImageTooLargeError):
+        convert_to_ascii(img, AsciiConfig(width=20000))
+
+    with pytest.raises(ImageTooLargeError):
+        convert_to_ascii(img, AsciiConfig(width=200, height=200, max_cells=100))
+
+
+def test_convert_to_ascii_cell_limit_can_be_bypassed():
+    img = Image.new("RGB", (64, 48), color=(120, 120, 120))
+    out = convert_to_ascii(
+        img, AsciiConfig(width=40, height=40, max_cells=100, allow_large=True)
+    )
+    assert len(out.splitlines()) == 40
+
+
+def test_convert_to_ascii_rejects_invalid_dimensions():
+    img = Image.new("RGB", (64, 48), color=(120, 120, 120))
+    for config in [
+        AsciiConfig(width=0),
+        AsciiConfig(height=0),
+        AsciiConfig(width=-5),
+        AsciiConfig(char_aspect=0.0),
+        AsciiConfig(char_aspect=-1.0),
+    ]:
+        with pytest.raises(InvalidDimensionsError):
+            convert_to_ascii(img, config)
+
+
+def test_all_modes_reject_invalid_dimensions():
+    img = Image.new("RGB", (64, 48), color=(120, 120, 120))
+    with pytest.raises(InvalidDimensionsError):
+        convert_to_pixels(img, PixelConfig(width=0))
+    with pytest.raises(InvalidDimensionsError):
+        convert_to_svg(img, PixelConfig(char_aspect=0.0))
+    with pytest.raises(InvalidDimensionsError):
+        convert_to_html(img, HtmlConfig(height=-2))
+
+
+def test_charset_with_a_newline_is_rejected_in_every_mode():
+    """A newline glyph used to shift the grid, and crashed color mode with IndexError."""
+    img = Image.new("RGB", (64, 48), color=(120, 120, 120))
+    with pytest.raises(InvalidCharsetError):
+        convert_to_ascii(img, AsciiConfig(charset=" \n#", width=10))
+    with pytest.raises(InvalidCharsetError):
+        convert_to_ascii(img, AsciiConfig(charset=" \n#", width=10, color=True))
+    with pytest.raises(InvalidCharsetError):
+        convert_to_html(img, HtmlConfig(charset=" \n#", width=10))
+
+
+def test_ascii_output_is_always_rectangular():
+    img = Image.new("RGB", (37, 23))
+    pixels = img.load()
+    for y in range(23):
+        for x in range(37):
+            pixels[x, y] = (x * 7 % 256, y * 11 % 256, (x * y) % 256)
+
+    for charset in ["standard", "detailed", "blocks", "binary", "minimal"]:
+        for color in (False, True):
+            out = convert_to_ascii(
+                img, AsciiConfig(width=25, height=9, charset=charset, color=color)
+            )
+            lines = out.splitlines()
+            assert len(lines) == 9, (charset, color)
+            if not color:
+                assert {len(line) for line in lines} == {25}, (charset, color)

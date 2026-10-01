@@ -1,5 +1,11 @@
 import numpy as np
-from img2ascii.renderers.ascii_art import map_luma_to_ascii, AsciiArtRenderer
+import pytest
+
+from img2ascii.renderers.ascii_art import (
+    HAS_SCIPY,
+    AsciiArtRenderer,
+    map_luma_to_ascii,
+)
 
 
 def test_map_luma_to_ascii_extreme_mapping():
@@ -42,6 +48,7 @@ def test_ascii_art_renderer_class():
     assert result == "xy\nyx"
 
 
+@pytest.mark.skipif(not HAS_SCIPY, reason="requires the optional scipy extra")
 def test_map_luma_to_ascii_with_edges():
     grid_luma = np.array(
         [[0.0, 255.0, 255.0], [0.0, 255.0, 255.0], [0.0, 255.0, 255.0]],
@@ -54,6 +61,7 @@ def test_map_luma_to_ascii_with_edges():
     assert "|" in result
 
 
+@pytest.mark.skipif(not HAS_SCIPY, reason="requires the optional scipy extra")
 def test_map_luma_to_ascii_with_horizontal_edges():
     grid_luma = np.array(
         [[0.0, 0.0, 0.0], [255.0, 255.0, 255.0], [255.0, 255.0, 255.0]],
@@ -66,6 +74,7 @@ def test_map_luma_to_ascii_with_horizontal_edges():
     assert "-" in result
 
 
+@pytest.mark.skipif(not HAS_SCIPY, reason="requires the optional scipy extra")
 def test_map_luma_to_ascii_with_diagonal_edges():
     # Diagonal falling
     grid_luma_falling = np.array(
@@ -91,6 +100,7 @@ def test_map_luma_to_ascii_with_diagonal_edges():
 def test_map_luma_to_ascii_edges_missing_scipy():
     grid_luma = np.array([[0.0, 255.0], [255.0, 0.0]], dtype=np.float32)
     from unittest.mock import patch
+
     import pytest
 
     with patch("img2ascii.renderers.ascii_art.HAS_SCIPY", False):
@@ -113,6 +123,7 @@ def test_map_luma_to_ascii_transparency():
     assert lines[1] == "A "
 
 
+@pytest.mark.skipif(not HAS_SCIPY, reason="requires the optional scipy extra")
 def test_edge_strategy_with_transparency():
     # 3x3 grid with vertical edge in the middle column
     grid_luma = np.array(

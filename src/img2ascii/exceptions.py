@@ -12,3 +12,15 @@ class ImageTooLargeError(Img2AsciiError):
 
 class InvalidCharsetError(Img2AsciiError):
     """Raised when an invalid charset is provided."""
+
+
+class InvalidColorError(Img2AsciiError, ValueError):
+    """Raised when a color string cannot be parsed."""
+
+
+class InvalidGlyphError(Img2AsciiError, ValueError):
+    """Raised when a glyph is not a single printable character."""
+
+
+class InvalidDimensionsError(Img2AsciiError, ValueError):
+    """Raised when requested output dimensions are not positive."""
