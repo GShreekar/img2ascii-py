@@ -75,8 +75,8 @@ select = [
 ]
 
 [tool.mypy]
-# Pinned to the floor in requires-python so version-specific syntax is caught here.
-python_version = "3.10"
+# numpy's stubs use 3.12-only syntax; the floor-version CI job covers 3.10 compatibility.
+python_version = "3.12"
 files = ["src"]
 strict = true
 warn_unreachable = true
