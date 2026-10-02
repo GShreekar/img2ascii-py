@@ -1,3 +1,5 @@
+from collections.abc import Callable
+
 import numpy as np
 from PIL import Image
 
@@ -42,6 +44,9 @@ def _numba_block_avg_2d(
             out[r, c] = total / (block_height * block_width)
     return out
 
+
+_numba_block_avg_3d_jit: Callable[..., np.ndarray]
+_numba_block_avg_2d_jit: Callable[..., np.ndarray]
 
 if HAS_NUMBA:
     _numba_block_avg_3d_jit = jit(nopython=True, cache=True)(_numba_block_avg_3d)

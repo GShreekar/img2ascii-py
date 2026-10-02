@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 
 import numpy as np
 
@@ -49,6 +50,8 @@ def _dither_luma_2d(norm_luma: np.ndarray, ramp_len: int) -> np.ndarray:
                     dithered[r + 1, c + 1] += err * (1.0 / 16.0)
     return dithered
 
+
+_dither_luma_2d_jit: Callable[..., np.ndarray]
 
 if HAS_NUMBA:
     _dither_luma_2d_jit = jit(nopython=True, cache=True)(_dither_luma_2d)
